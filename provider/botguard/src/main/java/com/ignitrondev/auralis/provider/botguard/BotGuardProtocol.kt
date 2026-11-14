@@ -38,8 +38,14 @@ internal object BotGuardProtocol {
     /** Identifies the YouTube web BotGuard integration. Public: it ships in youtube.com's own script. */
     const val REQUEST_KEY = "O43z0dpjhgX20SCx4KAo"
 
-    /** The public YouTube web client key used by youtube.com for these requests. Not an Auralis credential. */
-    const val WEB_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw"
+    /**
+     * YouTube web client key for these requests. Injected at build time from local.properties or
+     * the environment (see provider/botguard/build.gradle.kts); never committed (spec 17.3).
+     */
+    val webApiKey: String get() = BuildConfig.YOUTUBE_WEB_API_KEY
+
+    /** False when the build has no key: BotGuard is then disabled. */
+    val isConfigured: Boolean get() = webApiKey.isNotBlank()
 
     private const val MAX_RESPONSE_CHARS = 4 * 1024 * 1024
     private val trustedInterpreterHosts = setOf("www.google.com", "www.gstatic.com")

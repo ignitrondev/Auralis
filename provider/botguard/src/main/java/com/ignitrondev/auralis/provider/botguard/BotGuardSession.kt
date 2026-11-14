@@ -191,7 +191,7 @@ internal class BotGuardSession private constructor(private val webView: WebView)
             connection.setRequestProperty("User-Agent", USER_AGENT)
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Content-Type", "application/json+protobuf")
-            connection.setRequestProperty("x-goog-api-key", BotGuardProtocol.WEB_API_KEY)
+            connection.setRequestProperty("x-goog-api-key", BotGuardProtocol.webApiKey)
             connection.setRequestProperty("x-user-agent", "grpc-web-javascript/0.1")
             connection.outputStream.use { it.write(body.toByteArray()) }
             if (connection.responseCode != 200) throw BotGuardException("HTTP ${connection.responseCode}")
