@@ -9,7 +9,7 @@
   <img alt="Min SDK 26" src="https://img.shields.io/badge/minSdk-26-0B0B0B?style=flat-square">
   <a href="https://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4-0B0B0B?style=flat-square&logo=kotlin&logoColor=white"></a>
   <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-0B0B0B?style=flat-square&logo=jetpackcompose&logoColor=white"></a>
-  <img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-0B0B0B?style=flat-square">
+  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-0B0B0B?style=flat-square"></a>
   <img alt="Status: early development" src="https://img.shields.io/badge/status-early%20development-555555?style=flat-square">
 </p>
 
@@ -83,7 +83,7 @@ This repository used to host IgniteTunes, a Flutter app. Auralis replaces it wit
 
 ## License
 
-Auralis source code will be licensed under the GNU General Public License v3.0 (GPL-3.0). The license file has not been added yet.
+Auralis is licensed under the [GNU General Public License v3.0](LICENSE) (GPL-3.0). Third-party components and their licenses are listed in [NOTICE](NOTICE).
 
 ## Name and logo
 
