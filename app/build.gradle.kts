@@ -37,6 +37,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.feature.browse)
     implementation(projects.feature.home)
+    implementation(projects.feature.player)
     implementation(projects.feature.library)
     implementation(projects.feature.search)
     implementation(projects.feature.settings)
@@ -47,6 +48,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
+    testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.ext.junit)
