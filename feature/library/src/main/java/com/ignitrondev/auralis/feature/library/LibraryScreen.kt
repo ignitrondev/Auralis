@@ -39,6 +39,7 @@ import com.ignitrondev.auralis.domain.model.AlbumRef
 import com.ignitrondev.auralis.domain.model.ArtistRef
 import com.ignitrondev.auralis.domain.model.CatalogSection
 import com.ignitrondev.auralis.domain.model.HistorySection
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.ListeningHistory
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.MusicPlaylist
@@ -50,11 +51,19 @@ import com.ignitrondev.auralis.domain.repository.LibraryRepository
 fun LibraryDestination(
     actions: CatalogActions,
     onSignIn: () -> Unit,
+    onOpenCollection: (LibraryCollection) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LibraryScreen(state = state, actions = actions, onSignIn = onSignIn, onRetry = viewModel::retry, modifier = modifier)
+    LibraryScreen(
+        state = state,
+        actions = actions,
+        onSignIn = onSignIn,
+        onRetry = viewModel::retry,
+        onOpenCollection = onOpenCollection,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -63,6 +72,7 @@ fun LibraryScreen(
     actions: CatalogActions,
     onSignIn: () -> Unit,
     onRetry: () -> Unit,
+    onOpenCollection: (LibraryCollection) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -84,13 +94,13 @@ fun LibraryScreen(
             } else {
                 ErrorState(state.reason, onRetry)
             }
-            is CatalogUiState.Content -> LibraryContentList(content = state.data, actions = actions)
+            is CatalogUiState.Content -> LibraryContentList(content = state.data, actions = actions, onOpenCollection = onOpenCollection)
         }
     }
 }
 
 @Composable
-private fun LibraryContentList(content: LibraryContent, actions: CatalogActions) {
+private fun LibraryContentList(content: LibraryContent, actions: CatalogActions, onOpenCollection: (LibraryCollection) -> Unit) {
     val spacing = AuralisTheme.spacing
     val likedMusic = MusicPlaylist(
         id = LibraryRepository.LIKED_MUSIC_PLAYLIST_ID,
@@ -99,7 +109,7 @@ private fun LibraryContentList(content: LibraryContent, actions: CatalogActions)
         author = null,
         artworkUri = null,
     )
-    val albumsTitle = stringResource(R.string.feature_library_albums)
+    val titles = LibraryCollection.entries.associateWith { stringResource(it.title) }
     val emptyHistory = stringResource(R.string.feature_library_history_empty)
     LazyColumn(
         contentPadding = PaddingValues(top = spacing.lg, bottom = LocalBottomChromePadding.current + spacing.xl),
@@ -112,13 +122,18 @@ private fun LibraryContentList(content: LibraryContent, actions: CatalogActions)
                 leadingIcon = AuralisIcons.Liked,
             )
         }
-        if (content.albums.isNotEmpty()) {
-            item(key = "albums") {
-                SectionCarousel(
-                    section = CatalogSection(albumsTitle, content.albums),
-                    actions = actions,
-                    modifier = Modifier.padding(top = spacing.xl),
-                )
+        // Playlists, albums, artists: the first page of each, with See all for the rest.
+        LibraryCollection.entries.forEach { collection ->
+            val items = content.items(collection)
+            if (items.isNotEmpty()) {
+                item(key = collection.name) {
+                    SectionCarousel(
+                        section = CatalogSection(titles.getValue(collection), items),
+                        actions = actions,
+                        modifier = Modifier.padding(top = spacing.xl),
+                        onSeeAll = { onOpenCollection(collection) },
+                    )
+                }
             }
         }
         item(key = "history-heading") {
@@ -174,11 +189,15 @@ private fun LibraryScreenPreview() {
     AuralisTheme {
         LibraryScreen(
             state = CatalogUiState.Content(
-                LibraryContent(listOf(album), ListeningHistory(listOf(HistorySection("Today", listOf(track))))),
+                LibraryContent(
+                    mapOf(LibraryCollection.ALBUMS to listOf(album)),
+                    ListeningHistory(listOf(HistorySection("Today", listOf(track)))),
+                ),
             ),
             actions = CatalogActions.None,
             onSignIn = {},
             onRetry = {},
+            onOpenCollection = {},
         )
     }
 }

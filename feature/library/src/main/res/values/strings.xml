@@ -3,8 +3,14 @@
     <string name="feature_library_liked_music">Liked music</string>
     <string name="feature_library_liked_music_subtitle">Songs you liked on YouTube Music</string>
     <string name="feature_library_albums">Albums</string>
+    <string name="feature_library_albums_empty">No saved albums yet. Albums you save on YouTube Music show up here.</string>
+    <string name="feature_library_playlists">Playlists</string>
+    <string name="feature_library_playlists_empty">No playlists yet. Playlists you make or save on YouTube Music show up here.</string>
+    <string name="feature_library_artists">Artists</string>
+    <string name="feature_library_artists_empty">No artists yet. Artists you subscribe to on YouTube Music show up here.</string>
+    <string name="feature_library_load_more_failed">Couldn\'t load more. Try again</string>
     <string name="feature_library_recently_played">Recently played</string>
     <string name="feature_library_history_empty">Nothing played yet. Songs you play on YouTube Music show up here.</string>
-    <string name="feature_library_sign_in_message">Sign in to YouTube Music to see your albums, liked music and what you have been listening to.</string>
+    <string name="feature_library_sign_in_message">Sign in to YouTube Music to see your playlists, albums, artists, liked music and what you have been listening to.</string>
     <string name="feature_library_sign_in">Sign in</string>
 </resources>

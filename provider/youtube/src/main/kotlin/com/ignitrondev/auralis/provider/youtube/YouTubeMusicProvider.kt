@@ -7,7 +7,9 @@ import com.ignitrondev.auralis.domain.model.AlbumDetail
 import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.HomeFeed
 import com.ignitrondev.auralis.domain.model.ListeningHistory
-import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
+import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import com.ignitrondev.auralis.domain.repository.CatalogException
@@ -23,7 +25,7 @@ import com.ignitrondev.auralis.provider.youtube.parser.AlbumParser
 import com.ignitrondev.auralis.provider.youtube.parser.ArtistParser
 import com.ignitrondev.auralis.provider.youtube.parser.FeedParser
 import com.ignitrondev.auralis.provider.youtube.parser.HistoryParser
-import com.ignitrondev.auralis.provider.youtube.parser.LibraryAlbumsParser
+import com.ignitrondev.auralis.provider.youtube.parser.LibraryCollectionParser
 import com.ignitrondev.auralis.provider.youtube.parser.LikeStatusParser
 import com.ignitrondev.auralis.provider.youtube.parser.PlaylistParser
 import com.ignitrondev.auralis.provider.youtube.parser.SOURCE_ID
@@ -123,9 +125,15 @@ class YouTubeMusicProvider internal constructor(
         HistoryParser.parse(accountBrowse("history", HISTORY_BROWSE_ID))
     }
 
-    override suspend fun savedAlbums(): List<MusicAlbum> = request("saved albums") {
-        LibraryAlbumsParser.parse(accountBrowse("saved albums", SAVED_ALBUMS_BROWSE_ID))
-    }
+    override suspend fun collection(collection: LibraryCollection, pageToken: String?): Page<CatalogItem> =
+        request("library ${collection.name.lowercase()}") {
+            val browseId = when (collection) {
+                LibraryCollection.PLAYLISTS -> PLAYLISTS_BROWSE_ID
+                LibraryCollection.ALBUMS -> SAVED_ALBUMS_BROWSE_ID
+                LibraryCollection.ARTISTS -> SUBSCRIBED_ARTISTS_BROWSE_ID
+            }
+            LibraryCollectionParser.parse(accountBrowse("library", browseId, continuation = pageToken), collection)
+        }
 
     override suspend fun isTrackLiked(trackId: String): Boolean = request("like status") {
         requireSession("like status")
@@ -187,9 +195,16 @@ class YouTubeMusicProvider internal constructor(
      * sent without a session; a rejected session (401 or 403, as a response or an exception) is
      * reported as [CatalogException.Reason.SignInRequired].
      */
-    private suspend fun accountBrowse(operation: String, browseId: String): JsonObject {
+    private suspend fun accountBrowse(operation: String, browseId: String, continuation: String? = null): JsonObject {
         requireSession(operation)
-        val response = rejectedSessionAware(operation) { session.innerTube.browse(MUSIC_CLIENT, browseId = browseId) }
+        val response = rejectedSessionAware(operation) {
+            // A continuation names the page by itself; the browse ID is only for the first page.
+            if (continuation == null) {
+                session.innerTube.browse(MUSIC_CLIENT, browseId = browseId)
+            } else {
+                session.innerTube.browse(MUSIC_CLIENT, browseId = null, continuation = continuation)
+            }
+        }
         return response.toJson(operation)
     }
 
@@ -318,6 +333,8 @@ class YouTubeMusicProvider internal constructor(
         const val EXPLORE_BROWSE_ID = "FEmusic_explore"
         const val HISTORY_BROWSE_ID = "FEmusic_history"
         const val SAVED_ALBUMS_BROWSE_ID = "FEmusic_liked_albums"
+        const val PLAYLISTS_BROWSE_ID = "FEmusic_liked_playlists"
+        const val SUBSCRIBED_ARTISTS_BROWSE_ID = "FEmusic_library_corpus_artists"
         val SESSION_REJECTED = setOf(401, 403)
     }
 }

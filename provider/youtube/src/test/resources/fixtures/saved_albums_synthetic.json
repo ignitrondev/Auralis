@@ -11,6 +11,7 @@
                   "itemSectionRenderer": {
                     "contents": [{
                       "gridRenderer": {
+                        "continuations": [{ "nextContinuationData": { "continuation": "PAGE2TOKEN" } }],
                         "items": [
                           {
                             "musicTwoRowItemRenderer": {

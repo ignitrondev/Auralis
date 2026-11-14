@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,11 +25,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ignitrondev.auralis.core.designsystem.component.Artwork
+import com.ignitrondev.auralis.core.designsystem.icon.AuralisIcons
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
 import com.ignitrondev.auralis.domain.model.CatalogItem
 import com.ignitrondev.auralis.domain.model.CatalogSection
@@ -57,11 +61,12 @@ fun CatalogCard(
     item: CatalogItem,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    fillWidth: Boolean = false,
 ) {
     val isArtist = item is MusicArtist
     Column(
         modifier = modifier
-            .width(CardWidth)
+            .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(CardWidth))
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         horizontalAlignment = if (isArtist) Alignment.CenterHorizontally else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.xs),
@@ -70,7 +75,7 @@ fun CatalogCard(
             uri = item.artworkUri,
             contentDescription = null,
             shape = if (isArtist) CircleShape else AuralisTheme.shapes.medium,
-            modifier = Modifier.size(CardWidth),
+            modifier = if (fillWidth) Modifier.fillMaxWidth().aspectRatio(1f) else Modifier.size(CardWidth),
         )
         Text(
             text = item.title,
@@ -89,16 +94,51 @@ fun CatalogCard(
     }
 }
 
+/**
+ * A section heading that opens the full list: the whole row is the touch target, with a
+ * "See all" label so it reads as a control (spec section 15: no controls that look inert).
+ */
+@Composable
+fun SectionHeader(title: String, onSeeAll: () -> Unit, modifier: Modifier = Modifier) {
+    val seeAll = stringResource(R.string.core_ui_see_all)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = seeAll, role = Role.Button, onClick = onSeeAll)
+            .padding(horizontal = AuralisTheme.spacing.screenGutter, vertical = AuralisTheme.spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = AuralisTheme.typography.sectionTitle,
+            color = AuralisTheme.colors.contentPrimary,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() },
+        )
+        Text(text = seeAll, style = AuralisTheme.typography.label, color = AuralisTheme.colors.contentSecondary)
+        Icon(
+            imageVector = AuralisIcons.Forward,
+            contentDescription = null,
+            tint = AuralisTheme.colors.contentSecondary,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
 /** A titled horizontal row of cards. */
 @Composable
 fun SectionCarousel(
     section: CatalogSection,
     actions: CatalogActions,
     modifier: Modifier = Modifier,
+    onSeeAll: (() -> Unit)? = null,
 ) {
     val tracks = section.items.filterIsInstance<MusicTrack>()
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.md)) {
-        section.title?.let { SectionTitle(it) }
+        section.title?.let { title ->
+            if (onSeeAll == null) SectionTitle(title) else SectionHeader(title = title, onSeeAll = onSeeAll)
+        }
         LazyRow(
             contentPadding = PaddingValues(horizontal = AuralisTheme.spacing.screenGutter),
             horizontalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.lg),

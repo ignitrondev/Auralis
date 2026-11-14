@@ -59,7 +59,10 @@ class NowPlayingViewModelTest {
         var nextWrite: CompletableDeferred<Unit>? = null
         val writes = mutableListOf<Pair<String, Boolean>>()
         override suspend fun history(): ListeningHistory = error("unused")
-        override suspend fun savedAlbums(): List<MusicAlbum> = error("unused")
+        override suspend fun collection(
+            collection: com.ignitrondev.auralis.domain.model.LibraryCollection,
+            pageToken: String?,
+        ): com.ignitrondev.auralis.domain.model.Page<com.ignitrondev.auralis.domain.model.CatalogItem> = error("unused")
         override suspend fun isTrackLiked(trackId: String) = trackId in liked
         override suspend fun setTrackLiked(trackId: String, liked: Boolean) {
             writes += trackId to liked

@@ -4,7 +4,9 @@
 package com.ignitrondev.auralis.provider.api
 
 import com.ignitrondev.auralis.domain.model.ListeningHistory
-import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
+import com.ignitrondev.auralis.domain.model.Page
 
 /**
  * The signed-in account's library on a provider (spec section 12.2). The `set` calls change the
@@ -15,7 +17,7 @@ import com.ignitrondev.auralis.domain.model.MusicAlbum
 interface AccountLibraryProvider {
     suspend fun history(): ListeningHistory
 
-    suspend fun savedAlbums(): List<MusicAlbum>
+    suspend fun collection(collection: LibraryCollection, pageToken: String? = null): Page<CatalogItem>
 
     suspend fun isTrackLiked(trackId: String): Boolean
 

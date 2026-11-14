@@ -6,6 +6,7 @@ package com.ignitrondev.auralis.core.designsystem.icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -32,6 +33,7 @@ object AuralisIcons {
     val Play: ImageVector = Icons.Rounded.PlayArrow
     val Close: ImageVector = Icons.Rounded.Close
     val Back: ImageVector = Icons.AutoMirrored.Rounded.ArrowBack
+    val Forward: ImageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight
     val Retry: ImageVector = Icons.Rounded.Refresh
     val Collapse: ImageVector = Icons.Rounded.KeyboardArrowDown
 
