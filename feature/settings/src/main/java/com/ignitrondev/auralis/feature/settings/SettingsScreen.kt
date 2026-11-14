@@ -71,12 +71,11 @@ fun SettingsScreen(
         }
         Text(stringResource(R.string.feature_settings_updates), style = AuralisTheme.typography.sectionTitle, color = AuralisTheme.colors.contentPrimary)
         GlassCard(modifier = Modifier.fillMaxWidth()) {
-            val context = LocalContext.current
-            GlassButton(
-                text = stringResource(R.string.feature_settings_check_for_updates),
-                onClick = {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ignitrondev/Auralis/releases")))
-                },
+            val update by viewModel.update.collectAsStateWithLifecycle()
+            UpdatesContent(
+                installedVersion = viewModel.installedVersion,
+                update = update,
+                onCheck = viewModel::checkForUpdates,
             )
         }
         Text(
@@ -148,5 +147,42 @@ fun SignInScreen(
             onClick = onDone,
             modifier = Modifier.padding(AuralisTheme.spacing.sm),
         )
+    }
+}
+
+@Composable
+private fun UpdatesContent(installedVersion: String, update: UpdateState, onCheck: () -> Unit) {
+    val colors = AuralisTheme.colors
+    val context = LocalContext.current
+    val open = { url: String -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+    Column(verticalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.md)) {
+        Text(
+            stringResource(R.string.feature_settings_installed_version, installedVersion),
+            style = AuralisTheme.typography.body,
+            color = colors.contentPrimary,
+        )
+        val message = when (update) {
+            UpdateState.Idle -> null
+            UpdateState.Checking -> stringResource(R.string.feature_settings_checking_updates)
+            UpdateState.UpToDate -> stringResource(R.string.feature_settings_up_to_date)
+            is UpdateState.Available -> stringResource(R.string.feature_settings_update_available, update.version)
+            UpdateState.Failed -> stringResource(R.string.feature_settings_update_failed)
+        }
+        message?.let { Text(it, style = AuralisTheme.typography.body, color = colors.contentSecondary) }
+        if (update is UpdateState.Available) {
+            GlassButton(
+                text = stringResource(R.string.feature_settings_download_update),
+                icon = AuralisIcons.Download,
+                onClick = { open(update.downloadUrl) },
+            )
+            GlassButton(text = stringResource(R.string.feature_settings_release_notes), onClick = { open(update.pageUrl) })
+        } else {
+            GlassButton(
+                text = stringResource(R.string.feature_settings_check_for_updates),
+                icon = AuralisIcons.Retry,
+                onClick = onCheck,
+                enabled = update != UpdateState.Checking,
+            )
+        }
     }
 }
