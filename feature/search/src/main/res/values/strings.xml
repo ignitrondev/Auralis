@@ -1,4 +1,13 @@
 <resources>
     <string name="feature_search_title">Search</string>
-    <string name="feature_search_placeholder">Search for songs, albums, artists and playlists will appear here.</string>
+    <string name="feature_search_placeholder">Songs, albums, artists</string>
+    <string name="feature_search_hint">Search YouTube Music for songs, albums, artists and playlists.</string>
+    <string name="feature_search_recent">Recent searches</string>
+    <string name="feature_search_remove_recent">Remove %1$s from recent searches</string>
+    <string name="feature_search_no_results">No results for \"%1$s\".</string>
+    <string name="feature_search_top_result">Top result</string>
+    <string name="feature_search_songs">Songs</string>
+    <string name="feature_search_albums">Albums</string>
+    <string name="feature_search_artists">Artists</string>
+    <string name="feature_search_playlists">Playlists</string>
 </resources>

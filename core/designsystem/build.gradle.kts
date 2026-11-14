@@ -17,6 +17,10 @@ dependencies {
     // type is part of the design system API, so the library stays replaceable.
     implementation(libs.backdrop)
 
+    // Artwork loading. Images come from YouTube image hosts only.
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.ext.junit)

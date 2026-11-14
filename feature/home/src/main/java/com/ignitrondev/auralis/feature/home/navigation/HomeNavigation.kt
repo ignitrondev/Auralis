@@ -7,7 +7,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
-import com.ignitrondev.auralis.feature.home.HomeScreen
+import com.ignitrondev.auralis.core.ui.CatalogActions
+import com.ignitrondev.auralis.feature.home.HomeDestination
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,8 +16,8 @@ data object HomeRoute
 
 fun NavController.navigateToHome(navOptions: NavOptions? = null) = navigate(HomeRoute, navOptions)
 
-fun NavGraphBuilder.homeScreen() {
+fun NavGraphBuilder.homeScreen(actions: CatalogActions) {
     composable<HomeRoute> {
-        HomeScreen()
+        HomeDestination(actions = actions)
     }
 }

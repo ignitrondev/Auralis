@@ -1,0 +1,8 @@
+<resources>
+    <string name="feature_browse_top_songs">Top songs</string>
+    <string name="feature_browse_songs">Songs</string>
+    <plurals name="feature_browse_more_tracks">
+        <item quantity="one">Showing the first song.</item>
+        <item quantity="other">Showing the first %1$d songs.</item>
+    </plurals>
+</resources>
