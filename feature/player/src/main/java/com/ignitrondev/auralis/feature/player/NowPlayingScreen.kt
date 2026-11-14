@@ -56,6 +56,7 @@ fun NowPlayingScreen(
     viewModel: NowPlayingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val like by viewModel.like.collectAsStateWithLifecycle()
     val track = state.currentTrack
     if (track == null) {
         MessageState(stringResource(R.string.feature_player_nothing))
@@ -72,7 +73,7 @@ fun NowPlayingScreen(
                     .padding(horizontal = spacing.screenGutter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                TopBar(onCollapse)
+                TopBar(onCollapse = onCollapse, like = like, onToggleLike = viewModel::toggleLike)
                 Spacer(Modifier.weight(0.6f))
                 GlowingArtwork(
                     uri = track.artworkUri,
@@ -102,6 +103,15 @@ fun NowPlayingScreen(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = spacing.xs),
                 )
+                if (like.failed) {
+                    Text(
+                        text = stringResource(R.string.feature_player_like_failed),
+                        style = AuralisTheme.typography.bodySmall,
+                        color = AuralisTheme.colors.contentSecondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = spacing.xs),
+                    )
+                }
                 Spacer(Modifier.height(spacing.xl))
                 ControlsPanel(state = state, viewModel = viewModel)
                 Spacer(Modifier.height(spacing.lg))
@@ -113,7 +123,7 @@ fun NowPlayingScreen(
 }
 
 @Composable
-private fun TopBar(onCollapse: () -> Unit) {
+private fun TopBar(onCollapse: () -> Unit, like: LikeUiState, onToggleLike: () -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = AuralisTheme.spacing.sm)) {
         GlassIconButton(
             icon = AuralisIcons.Collapse,
@@ -127,6 +137,17 @@ private fun TopBar(onCollapse: () -> Unit) {
             color = AuralisTheme.colors.contentSecondary,
             modifier = Modifier.align(Alignment.Center),
         )
+        if (like.visible) {
+            val liked = like.liked == true
+            // Liked is shown by shape (filled or outline), never by colour (spec 8.2.1).
+            GlassIconButton(
+                icon = if (liked) AuralisIcons.Liked else AuralisIcons.NotLiked,
+                contentDescription = stringResource(if (liked) R.string.feature_player_unlike else R.string.feature_player_like),
+                onClick = onToggleLike,
+                enabled = !like.pending,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
     }
 }
 

@@ -142,11 +142,17 @@ internal object AlbumParser {
             ) as? MusicTrack
         }.orEmpty()
 
+        val buttons = header.arr("buttons").objects()
         return AlbumDetail(
             album = album,
             tracks = tracks,
             description = header.path("description", "musicDescriptionShelfRenderer").obj("description").text(),
             trackCountText = header.obj("secondSubtitle").text(),
+            libraryPlaylistId = buttons.firstNotNullOfOrNull {
+                it.path("musicPlayButtonRenderer", "playNavigationEndpoint", "watchPlaylistEndpoint").str("playlistId")
+            },
+            // The save button: toggled when the signed-in account has the album in its library.
+            isSavedToLibrary = buttons.any { it.renderer("toggleButtonRenderer")?.bool("isToggled") == true },
         )
     }
 }
@@ -252,5 +258,17 @@ internal object LibraryAlbumsParser {
         return grids.flatMap { grid -> grid.arr("items").objects() }
             .mapNotNull { it.renderer("musicTwoRowItemRenderer")?.twoRowItem() as? MusicAlbum }
             .distinctBy { it.id }
+    }
+}
+
+/**
+ * The like status of a track in a `next` response: the `likeButtonRenderer` whose target is the
+ * track. Searched by target rather than by path, because where the button sits differs by client.
+ */
+internal object LikeStatusParser {
+    fun isLiked(trackId: String, root: JsonObject): Boolean {
+        val button = root.findObjects("likeButtonRenderer").firstOrNull { it.path("target").str("videoId") == trackId }
+            ?: throw UnexpectedResponseException("like status: no like button for the track")
+        return button.str("likeStatus") == "LIKE"
     }
 }

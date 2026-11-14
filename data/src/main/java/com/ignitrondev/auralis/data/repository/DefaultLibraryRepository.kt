@@ -19,4 +19,10 @@ class DefaultLibraryRepository @Inject constructor(
     override suspend fun history(): ListeningHistory = provider.history()
 
     override suspend fun savedAlbums(): List<MusicAlbum> = provider.savedAlbums()
+
+    override suspend fun isTrackLiked(trackId: String): Boolean = provider.isTrackLiked(trackId)
+
+    override suspend fun setTrackLiked(trackId: String, liked: Boolean) = provider.setTrackLiked(trackId, liked)
+
+    override suspend fun setAlbumSaved(libraryPlaylistId: String, saved: Boolean) = provider.setAlbumSaved(libraryPlaylistId, saved)
 }

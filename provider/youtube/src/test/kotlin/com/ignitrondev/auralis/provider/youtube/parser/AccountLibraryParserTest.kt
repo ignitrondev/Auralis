@@ -61,6 +61,21 @@ class AccountLibraryParserTest {
         assertTrue(albums[1].isExplicit)
     }
 
+    @Test
+    fun likeStatusIsReadFromTheButtonForThatTrack(): Unit {
+        // Other tracks' buttons (for example in the queue) must not be mistaken for the current one.
+        val root = InnerTubeSession.json.parseToJsonElement(
+            """
+            {"contents": {"queue": [{"likeButtonRenderer": {"target": {"videoId": "other"}, "likeStatus": "LIKE"}}]},
+             "playerOverlays": {"playerOverlayRenderer": {"actions": [
+               {"likeButtonRenderer": {"target": {"videoId": "song00000A1"}, "likeStatus": "INDIFFERENT"}}
+             ]}}}
+            """.trimIndent(),
+        ).jsonObject
+        assertFalse(LikeStatusParser.isLiked("song00000A1", root))
+        assertTrue(LikeStatusParser.isLiked("other", root))
+    }
+
     @Test(expected = UnexpectedResponseException::class)
     fun aPageWithoutTheExpectedLayoutIsReported() {
         HistoryParser.parse(InnerTubeSession.json.parseToJsonElement("""{"contents":{}}""").jsonObject)

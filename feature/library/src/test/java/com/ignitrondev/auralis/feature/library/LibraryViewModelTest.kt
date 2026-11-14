@@ -42,6 +42,9 @@ class LibraryViewModelTest {
             albumsFailure?.let { throw CatalogException(it, "albums") }
             return listOf(MusicAlbum("MPRE1", "youtube", "Manusia", emptyList(), "2022", null))
         }
+        override suspend fun isTrackLiked(trackId: String) = error("unused")
+        override suspend fun setTrackLiked(trackId: String, liked: Boolean) = error("unused")
+        override suspend fun setAlbumSaved(libraryPlaylistId: String, saved: Boolean) = error("unused")
         override suspend fun history(): ListeningHistory {
             calls++
             if (failNext) {
