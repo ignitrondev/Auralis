@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.auralis.android.application)
     alias(libs.plugins.auralis.android.compose)
+    alias(libs.plugins.auralis.hilt)
 }
 
 android {
