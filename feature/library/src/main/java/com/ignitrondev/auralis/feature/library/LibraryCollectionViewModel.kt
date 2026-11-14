@@ -3,12 +3,16 @@
  */
 package com.ignitrondev.auralis.feature.library
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.ignitrondev.auralis.core.ui.CatalogUiState
-import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.repository.CatalogException
 import com.ignitrondev.auralis.domain.repository.LibraryRepository
+import com.ignitrondev.auralis.feature.library.navigation.LibraryCollectionRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,13 +22,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Every album saved to the account, loaded a page at a time as the list scrolls.
+ * Everything of one kind in the library, loaded a page at a time as the list scrolls.
  *
  * @property canLoadMore There is a next page and nothing is loading.
- * @property loadMoreFailed The last next-page request failed; the albums loaded so far stay.
+ * @property loadMoreFailed The last next-page request failed; the items loaded so far stay.
  */
-data class SavedAlbums(
-    val albums: List<MusicAlbum>,
+data class CollectionItems(
+    val items: List<CatalogItem>,
     val nextPageToken: String?,
     val loadingMore: Boolean = false,
     val loadMoreFailed: Boolean = false,
@@ -33,12 +37,19 @@ data class SavedAlbums(
 }
 
 @HiltViewModel
-class SavedAlbumsViewModel @Inject constructor(
+class LibraryCollectionViewModel internal constructor(
+    val collection: LibraryCollection,
     private val library: LibraryRepository,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<CatalogUiState<SavedAlbums>>(CatalogUiState.Loading)
-    val state: StateFlow<CatalogUiState<SavedAlbums>> = _state.asStateFlow()
+    @Inject
+    constructor(savedStateHandle: SavedStateHandle, library: LibraryRepository) : this(
+        LibraryCollection.valueOf(savedStateHandle.toRoute<LibraryCollectionRoute>().collection),
+        library,
+    )
+
+    private val _state = MutableStateFlow<CatalogUiState<CollectionItems>>(CatalogUiState.Loading)
+    val state: StateFlow<CatalogUiState<CollectionItems>> = _state.asStateFlow()
 
     init {
         retry()
@@ -49,8 +60,8 @@ class SavedAlbumsViewModel @Inject constructor(
         _state.value = CatalogUiState.Loading
         viewModelScope.launch {
             _state.value = try {
-                val page = library.savedAlbums()
-                CatalogUiState.Content(SavedAlbums(page.items, page.nextPageToken))
+                val page = library.collection(collection)
+                CatalogUiState.Content(CollectionItems(page.items, page.nextPageToken))
             } catch (error: CatalogException) {
                 CatalogUiState.Error(error.reason)
             }
@@ -65,7 +76,7 @@ class SavedAlbumsViewModel @Inject constructor(
         _state.value = CatalogUiState.Content(current.copy(loadingMore = true, loadMoreFailed = false))
         viewModelScope.launch {
             val next = try {
-                library.savedAlbums(token)
+                library.collection(collection, token)
             } catch (error: CatalogException) {
                 null
             }
@@ -76,7 +87,7 @@ class SavedAlbumsViewModel @Inject constructor(
                         data.copy(loadingMore = false, loadMoreFailed = true)
                     } else {
                         // Pages can overlap when the library changes between requests.
-                        SavedAlbums((data.albums + next.items).distinctBy { it.id }, next.nextPageToken)
+                        CollectionItems((data.items + next.items).distinctBy { it.id }, next.nextPageToken)
                     },
                 )
             }

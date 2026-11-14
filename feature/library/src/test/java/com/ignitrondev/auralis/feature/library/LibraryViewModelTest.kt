@@ -8,6 +8,8 @@ import com.ignitrondev.auralis.domain.auth.AuthRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.domain.model.HistorySection
 import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.repository.CatalogException
@@ -39,8 +41,8 @@ class LibraryViewModelTest {
         var calls = 0
         var failNext = false
         var albumsFailure: CatalogException.Reason? = null
-        override suspend fun savedAlbums(pageToken: String?): Page<MusicAlbum> {
-            albumsFailure?.let { throw CatalogException(it, "albums") }
+        override suspend fun collection(collection: LibraryCollection, pageToken: String?): Page<CatalogItem> {
+            if (collection == LibraryCollection.ALBUMS) albumsFailure?.let { throw CatalogException(it, "albums") }
             return Page(listOf(MusicAlbum("MPRE1", "youtube", "Manusia", emptyList(), "2022", null)), nextPageToken = null)
         }
         override suspend fun isTrackLiked(trackId: String) = error("unused")
@@ -113,7 +115,8 @@ class LibraryViewModelTest {
 
         advanceUntilIdle()
         val content = (viewModel.state.value as CatalogUiState.Content).data
-        assertEquals(emptyList<MusicAlbum>(), content.albums)
+        assertEquals("only the failed collection is left out", emptyList<CatalogItem>(), content.items(LibraryCollection.ALBUMS))
+        assertEquals(1, content.items(LibraryCollection.PLAYLISTS).size)
         assertEquals("Today", content.history.sections.single().title)
 
         library.albumsFailure = CatalogException.Reason.SignInRequired

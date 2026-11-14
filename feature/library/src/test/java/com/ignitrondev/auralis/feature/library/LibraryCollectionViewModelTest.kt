@@ -5,6 +5,8 @@ package com.ignitrondev.auralis.feature.library
 
 import com.ignitrondev.auralis.core.ui.CatalogUiState
 import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.repository.CatalogException
@@ -25,19 +27,17 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SavedAlbumsViewModelTest {
+class LibraryCollectionViewModelTest {
     private val dispatcher = StandardTestDispatcher()
-
-    private fun album(id: String) = MusicAlbum(id, "youtube", id, emptyList(), null, null)
 
     private class Pages : LibraryRepository {
         val requested = mutableListOf<String?>()
         var failNext = false
-        val pages = mapOf<String?, Page<MusicAlbum>>(
+        val pages = mapOf<String?, Page<CatalogItem>>(
             null to Page(listOf("a", "b").map { MusicAlbum(it, "youtube", it, emptyList(), null, null) }, "p2"),
             "p2" to Page(listOf("b", "c").map { MusicAlbum(it, "youtube", it, emptyList(), null, null) }, null),
         )
-        override suspend fun savedAlbums(pageToken: String?): Page<MusicAlbum> {
+        override suspend fun collection(collection: LibraryCollection, pageToken: String?): Page<CatalogItem> {
             requested += pageToken
             if (failNext) {
                 failNext = false
@@ -57,25 +57,25 @@ class SavedAlbumsViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun SavedAlbumsViewModel.data() = (state.value as CatalogUiState.Content).data
+    private fun LibraryCollectionViewModel.data() = (state.value as CatalogUiState.Content).data
 
     @Test
     fun loadsPagesUntilTheLastAndKeepsAlbumsWhenAPageFails() = runTest(dispatcher) {
         val repository = Pages()
-        val viewModel = SavedAlbumsViewModel(repository)
+        val viewModel = LibraryCollectionViewModel(LibraryCollection.ALBUMS, repository)
         advanceUntilIdle()
-        assertEquals(listOf("a", "b"), viewModel.data().albums.map { it.id })
+        assertEquals(listOf("a", "b"), viewModel.data().items.map { it.id })
         assertTrue(viewModel.data().canLoadMore)
 
         repository.failNext = true
         viewModel.loadMore()
         advanceUntilIdle()
         assertTrue(viewModel.data().loadMoreFailed)
-        assertEquals("albums loaded so far stay", listOf("a", "b"), viewModel.data().albums.map { it.id })
+        assertEquals("albums loaded so far stay", listOf("a", "b"), viewModel.data().items.map { it.id })
 
         viewModel.loadMore()
         advanceUntilIdle()
-        assertEquals("an album on both pages shows once", listOf("a", "b", "c"), viewModel.data().albums.map { it.id })
+        assertEquals("an album on both pages shows once", listOf("a", "b", "c"), viewModel.data().items.map { it.id })
         assertNull(viewModel.data().nextPageToken)
         assertFalse(viewModel.data().canLoadMore)
 
@@ -87,11 +87,11 @@ class SavedAlbumsViewModelTest {
     @Test
     fun aFailedFirstPageIsAnErrorThatRetryRecovers() = runTest(dispatcher) {
         val repository = Pages().apply { failNext = true }
-        val viewModel = SavedAlbumsViewModel(repository)
+        val viewModel = LibraryCollectionViewModel(LibraryCollection.ALBUMS, repository)
         advanceUntilIdle()
         assertEquals(CatalogUiState.Error(CatalogException.Reason.Network), viewModel.state.value)
         viewModel.retry()
         advanceUntilIdle()
-        assertEquals(2, viewModel.data().albums.size)
+        assertEquals(2, viewModel.data().items.size)
     }
 }

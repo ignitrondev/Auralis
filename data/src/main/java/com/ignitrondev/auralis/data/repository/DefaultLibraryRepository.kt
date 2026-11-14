@@ -4,7 +4,8 @@
 package com.ignitrondev.auralis.data.repository
 
 import com.ignitrondev.auralis.domain.model.ListeningHistory
-import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.repository.LibraryRepository
 import com.ignitrondev.auralis.provider.api.AccountLibraryProvider
@@ -19,7 +20,8 @@ class DefaultLibraryRepository @Inject constructor(
 ) : LibraryRepository {
     override suspend fun history(): ListeningHistory = provider.history()
 
-    override suspend fun savedAlbums(pageToken: String?): Page<MusicAlbum> = provider.savedAlbums(pageToken)
+    override suspend fun collection(collection: LibraryCollection, pageToken: String?): Page<CatalogItem> =
+        provider.collection(collection, pageToken)
 
     override suspend fun isTrackLiked(trackId: String): Boolean = provider.isTrackLiked(trackId)
 

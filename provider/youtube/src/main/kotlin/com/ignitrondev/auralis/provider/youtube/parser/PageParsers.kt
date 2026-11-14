@@ -9,6 +9,7 @@ import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.CatalogItem
 import com.ignitrondev.auralis.domain.model.CatalogSection
 import com.ignitrondev.auralis.domain.model.HistorySection
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.ListeningHistory
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.MusicArtist
@@ -243,35 +244,49 @@ internal object HistoryParser {
 }
 
 /**
- * Albums saved to the account's library (`FEmusic_liked_albums`), one page at a time.
- * - First page: a `gridRenderer` of album cards, directly in the section list or inside an
- *   `itemSectionRenderer`.
- * - Next pages: `continuationContents.gridContinuation`, or (newer responses)
- *   `onResponseReceivedActions[].appendContinuationItemsAction.continuationItems`.
+ * One kind of item in the account's library, one page at a time:
+ * `FEmusic_liked_playlists`, `FEmusic_liked_albums` or `FEmusic_library_corpus_artists`.
+ * - First page: a `gridRenderer` of cards or a `musicShelfRenderer` of rows, directly in the
+ *   section list or inside an `itemSectionRenderer`.
+ * - Next pages: `continuationContents` (`gridContinuation`, `musicShelfContinuation`), or
+ *   (newer responses) `onResponseReceivedActions[].appendContinuationItemsAction`.
  * The token for the next page is a `nextContinuationData.continuation` or a
- * `continuationItemRenderer`'s `continuationCommand.token`.
+ * `continuationItemRenderer`'s `continuationCommand.token`. Only items of the [LibraryCollection]
+ * asked for are kept; the Liked music playlist is listed apart, so it is left out of playlists.
  */
-internal object LibraryAlbumsParser {
-    fun parse(root: JsonObject): Page<MusicAlbum> {
+internal object LibraryCollectionParser {
+    fun parse(root: JsonObject, collection: LibraryCollection): Page<CatalogItem> {
         val containers: List<JsonObject> = when {
             root.path("contents", "singleColumnBrowseResultsRenderer") != null ->
                 root.sectionListContents("contents", "singleColumnBrowseResultsRenderer").flatMap { section ->
-                    listOfNotNull(section.renderer("gridRenderer")) +
-                        section.renderer("itemSectionRenderer")?.arr("contents").objects().mapNotNull { it.renderer("gridRenderer") }
+                    val inner = section.renderer("itemSectionRenderer")?.arr("contents").objects()
+                    (listOf(section) + inner).flatMap { listOfNotNull(it.renderer("gridRenderer"), it.renderer("musicShelfRenderer")) }
                 }
             root.obj("continuationContents") != null -> listOfNotNull(root.obj("continuationContents"))
             root.arr("onResponseReceivedActions") != null -> root.arr("onResponseReceivedActions").objects()
-            else -> throw UnexpectedResponseException("saved albums: no grid or continuation")
+            else -> throw UnexpectedResponseException("library: no grid, shelf or continuation")
         }
-        val albums = containers.flatMap { it.findObjects("musicTwoRowItemRenderer") }
-            .mapNotNull { it.twoRowItem() as? MusicAlbum }
+        val items = containers.flatMap { container ->
+            container.findObjects("musicTwoRowItemRenderer").mapNotNull { it.twoRowItem() } +
+                container.findObjects("musicResponsiveListItemRenderer").mapNotNull { it.responsiveListItem() }
+        }
+        val kept = items
+            .filter { item ->
+                when (collection) {
+                    LibraryCollection.PLAYLISTS -> item is MusicPlaylist && item.id.removePrefix("VL") != LIKED_MUSIC_ID
+                    LibraryCollection.ALBUMS -> item is MusicAlbum
+                    LibraryCollection.ARTISTS -> item is MusicArtist
+                }
+            }
             .distinctBy { it.id }
         val token = containers.firstNotNullOfOrNull { container ->
             container.findObjects("nextContinuationData").firstNotNullOfOrNull { it.str("continuation") }
                 ?: container.findObjects("continuationCommand").firstNotNullOfOrNull { it.str("token") }
         }
-        return Page(albums, token)
+        return Page(kept, token)
     }
+
+    private const val LIKED_MUSIC_ID = "LM"
 }
 
 /**

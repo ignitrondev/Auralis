@@ -3,6 +3,9 @@
  */
 package com.ignitrondev.auralis.provider.youtube.parser
 
+import com.ignitrondev.auralis.domain.model.LibraryCollection
+import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.MusicArtist
 import com.ignitrondev.auralis.provider.youtube.InnerTubeSession
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -51,8 +54,8 @@ class AccountLibraryParserTest {
 
     @Test
     fun savedAlbumsComeFromTheGridAndOnlyAlbumsAreKept(): Unit {
-        val page = LibraryAlbumsParser.parse(fixture("saved_albums_synthetic"))
-        val albums = page.items
+        val page = LibraryCollectionParser.parse(fixture("saved_albums_synthetic"), LibraryCollection.ALBUMS)
+        val albums = page.items.map { it as MusicAlbum }
         assertEquals("PAGE2TOKEN", page.nextPageToken)
 
         assertEquals(listOf("MPREalbum001", "MPREalbum002"), albums.map { it.id })
@@ -122,7 +125,7 @@ class AccountLibraryParserTest {
                  "items": [${albumCard("MPREalbum003")}, ${albumCard("MPREalbum004")}],
                  "continuations": [{"nextContinuationData": {"continuation": "PAGE3TOKEN"}}]}}}""",
         ).jsonObject
-        val page = LibraryAlbumsParser.parse(root)
+        val page = LibraryCollectionParser.parse(root, LibraryCollection.ALBUMS)
         assertEquals(listOf("MPREalbum003", "MPREalbum004"), page.items.map { it.id })
         assertEquals("PAGE3TOKEN", page.nextPageToken)
     }
@@ -134,13 +137,51 @@ class AccountLibraryParserTest {
                  ${albumCard("MPREalbum005")},
                  {"continuationItemRenderer": {"continuationEndpoint": {"continuationCommand": {"token": "PAGE4TOKEN"}}}}]}}]}""",
         ).jsonObject
-        assertEquals(listOf("MPREalbum005"), LibraryAlbumsParser.parse(withToken).items.map { it.id })
-        assertEquals("PAGE4TOKEN", LibraryAlbumsParser.parse(withToken).nextPageToken)
+        assertEquals(listOf("MPREalbum005"), LibraryCollectionParser.parse(withToken, LibraryCollection.ALBUMS).items.map { it.id })
+        assertEquals("PAGE4TOKEN", LibraryCollectionParser.parse(withToken, LibraryCollection.ALBUMS).nextPageToken)
 
         val last = InnerTubeSession.json.parseToJsonElement(
             """{"onResponseReceivedActions": [{"appendContinuationItemsAction": {"continuationItems": [${albumCard("MPREalbum006")}]}}]}""",
         ).jsonObject
-        assertNull(LibraryAlbumsParser.parse(last).nextPageToken)
+        assertNull(LibraryCollectionParser.parse(last, LibraryCollection.ALBUMS).nextPageToken)
+    }
+
+    @Test
+    fun playlistsLeaveOutLikedMusicAndOtherKinds(): Unit {
+        fun card(id: String, pageType: String) =
+            """{"musicTwoRowItemRenderer": {"title": {"runs": [{"text": "$id"}]},
+               "navigationEndpoint": {"browseEndpoint": {"browseId": "$id", "browseEndpointContextSupportedConfigs": {"browseEndpointContextMusicConfig": {"pageType": "$pageType"}}}}}}"""
+        val root = InnerTubeSession.json.parseToJsonElement(
+            """{"contents": {"singleColumnBrowseResultsRenderer": {"tabs": [{"tabRenderer": {"content": {"sectionListRenderer": {"contents": [
+                 {"gridRenderer": {"items": [
+                   {"musicTwoRowItemRenderer": {"title": {"runs": [{"text": "New playlist"}]}}},
+                   ${card("VLLM", "MUSIC_PAGE_TYPE_PLAYLIST")},
+                   ${card("VLPLmine0001", "MUSIC_PAGE_TYPE_PLAYLIST")},
+                   ${card("VLPLsaved002", "MUSIC_PAGE_TYPE_PLAYLIST")},
+                   ${card("MPREalbum001", "MUSIC_PAGE_TYPE_ALBUM")}],
+                   "continuations": [{"nextContinuationData": {"continuation": "MOREPLAYLISTS"}}]}}]}}}}]}}}""",
+        ).jsonObject
+        val page = LibraryCollectionParser.parse(root, LibraryCollection.PLAYLISTS)
+        assertEquals(listOf("VLPLmine0001", "VLPLsaved002"), page.items.map { it.id })
+        assertEquals("MOREPLAYLISTS", page.nextPageToken)
+    }
+
+    @Test
+    fun subscribedArtistsComeFromAListShelf(): Unit {
+        fun row(id: String) =
+            """{"musicResponsiveListItemRenderer": {
+                 "flexColumns": [{"musicResponsiveListItemFlexColumnRenderer": {"text": {"runs": [{"text": "Artist $id"}]}}},
+                                 {"musicResponsiveListItemFlexColumnRenderer": {"text": {"runs": [{"text": "18.8K subscribers"}]}}}],
+                 "navigationEndpoint": {"browseEndpoint": {"browseId": "$id", "browseEndpointContextSupportedConfigs": {"browseEndpointContextMusicConfig": {"pageType": "MUSIC_PAGE_TYPE_ARTIST"}}}}}}"""
+        val root = InnerTubeSession.json.parseToJsonElement(
+            """{"contents": {"singleColumnBrowseResultsRenderer": {"tabs": [{"tabRenderer": {"content": {"sectionListRenderer": {"contents": [
+                 {"itemSectionRenderer": {"contents": [{"musicShelfRenderer": {"contents": [${row("UCartist0001")}, ${row("UCartist0002")},
+                   {"continuationItemRenderer": {"continuationEndpoint": {"continuationCommand": {"token": "MOREARTISTS"}}}}]}}]}}]}}}}]}}}""",
+        ).jsonObject
+        val page = LibraryCollectionParser.parse(root, LibraryCollection.ARTISTS)
+        assertEquals(listOf("UCartist0001", "UCartist0002"), page.items.map { it.id })
+        assertEquals("Artist UCartist0001", (page.items.first() as MusicArtist).name)
+        assertEquals("MOREARTISTS", page.nextPageToken)
     }
 
     @Test(expected = UnexpectedResponseException::class)

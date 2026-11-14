@@ -44,16 +44,18 @@ import com.ignitrondev.auralis.core.ui.CatalogUiState
 import com.ignitrondev.auralis.core.ui.ErrorState
 import com.ignitrondev.auralis.core.ui.LoadingState
 import com.ignitrondev.auralis.core.ui.MessageState
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.core.ui.R as UiR
 
 @Composable
-fun SavedAlbumsDestination(
+fun LibraryCollectionDestination(
     actions: CatalogActions,
     onBack: () -> Unit,
-    viewModel: SavedAlbumsViewModel = hiltViewModel(),
+    viewModel: LibraryCollectionViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    SavedAlbumsScreen(
+    LibraryCollectionScreen(
+        collection = viewModel.collection,
         state = state,
         actions = actions,
         onBack = onBack,
@@ -62,10 +64,11 @@ fun SavedAlbumsDestination(
     )
 }
 
-/** All saved albums in a grid; the next page loads as the end of the list comes into view. */
+/** Everything of one kind in a grid; the next page loads as the end of the list comes into view. */
 @Composable
-fun SavedAlbumsScreen(
-    state: CatalogUiState<SavedAlbums>,
+fun LibraryCollectionScreen(
+    collection: LibraryCollection,
+    state: CatalogUiState<CollectionItems>,
     actions: CatalogActions,
     onBack: () -> Unit,
     onRetry: () -> Unit,
@@ -76,10 +79,10 @@ fun SavedAlbumsScreen(
         when (state) {
             CatalogUiState.Loading -> LoadingState()
             is CatalogUiState.Error -> ErrorState(state.reason, onRetry)
-            is CatalogUiState.Content -> if (state.data.albums.isEmpty()) {
-                MessageState(stringResource(R.string.feature_library_albums_empty))
+            is CatalogUiState.Content -> if (state.data.items.isEmpty()) {
+                MessageState(stringResource(collection.emptyText))
             } else {
-                AlbumGrid(albums = state.data, actions = actions, onLoadMore = onLoadMore)
+                ItemGrid(collection = collection, items = state.data, actions = actions, onLoadMore = onLoadMore)
             }
         }
         GlassIconButton(
@@ -94,7 +97,7 @@ fun SavedAlbumsScreen(
 }
 
 @Composable
-private fun AlbumGrid(albums: SavedAlbums, actions: CatalogActions, onLoadMore: () -> Unit) {
+private fun ItemGrid(collection: LibraryCollection, items: CollectionItems, actions: CatalogActions, onLoadMore: () -> Unit) {
     val spacing = AuralisTheme.spacing
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val grid = rememberLazyGridState()
@@ -105,8 +108,8 @@ private fun AlbumGrid(albums: SavedAlbums, actions: CatalogActions, onLoadMore: 
             last >= grid.layoutInfo.totalItemsCount - LOAD_AHEAD_ITEMS
         }
     }
-    LaunchedEffect(nearEnd, albums.canLoadMore) {
-        if (nearEnd && albums.canLoadMore && !albums.loadMoreFailed) onLoadMore()
+    LaunchedEffect(nearEnd, items.canLoadMore) {
+        if (nearEnd && items.canLoadMore && !items.loadMoreFailed) onLoadMore()
     }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = CardMinWidth),
@@ -124,21 +127,21 @@ private fun AlbumGrid(albums: SavedAlbums, actions: CatalogActions, onLoadMore: 
     ) {
         item(key = "title", span = { GridItemSpan(maxLineSpan) }) {
             Text(
-                text = stringResource(R.string.feature_library_albums),
+                text = stringResource(collection.title),
                 style = AuralisTheme.typography.screenTitle,
                 color = AuralisTheme.colors.contentPrimary,
                 modifier = Modifier.semantics { heading() },
             )
         }
-        items(albums.albums, key = { it.id }) { album ->
-            CatalogCard(item = album, onClick = actions.onClick(album), fillWidth = true)
+        items(items.items, key = { it::class.simpleName + it.id }) { item ->
+            CatalogCard(item = item, onClick = actions.onClick(item), fillWidth = true)
         }
-        if (albums.loadingMore || albums.loadMoreFailed) {
+        if (items.loadingMore || items.loadMoreFailed) {
             item(key = "footer", span = { GridItemSpan(maxLineSpan) }) {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    if (albums.loadMoreFailed) {
+                    if (items.loadMoreFailed) {
                         GlassButton(
-                            text = stringResource(R.string.feature_library_albums_load_more_failed),
+                            text = stringResource(R.string.feature_library_load_more_failed),
                             icon = AuralisIcons.Retry,
                             onClick = onLoadMore,
                         )
@@ -154,6 +157,21 @@ private fun AlbumGrid(albums: SavedAlbums, actions: CatalogActions, onLoadMore: 
         }
     }
 }
+
+/** The heading of a collection, in Library and on its own page. */
+internal val LibraryCollection.title: Int
+    get() = when (this) {
+        LibraryCollection.PLAYLISTS -> R.string.feature_library_playlists
+        LibraryCollection.ALBUMS -> R.string.feature_library_albums
+        LibraryCollection.ARTISTS -> R.string.feature_library_artists
+    }
+
+private val LibraryCollection.emptyText: Int
+    get() = when (this) {
+        LibraryCollection.PLAYLISTS -> R.string.feature_library_playlists_empty
+        LibraryCollection.ALBUMS -> R.string.feature_library_albums_empty
+        LibraryCollection.ARTISTS -> R.string.feature_library_artists_empty
+    }
 
 private val CardMinWidth = 148.dp
 private val BackButtonArea = 72.dp

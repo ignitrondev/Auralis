@@ -20,7 +20,7 @@ import com.ignitrondev.auralis.feature.browse.navigation.navigateToArtist
 import com.ignitrondev.auralis.feature.browse.navigation.navigateToPlaylist
 import com.ignitrondev.auralis.feature.home.navigation.HomeRoute
 import com.ignitrondev.auralis.feature.home.navigation.homeScreen
-import com.ignitrondev.auralis.feature.library.navigation.SavedAlbumsRoute
+import com.ignitrondev.auralis.feature.library.navigation.navigateToLibraryCollection
 import com.ignitrondev.auralis.feature.library.navigation.libraryScreen
 import com.ignitrondev.auralis.feature.search.navigation.searchScreen
 import com.ignitrondev.auralis.feature.settings.navigation.navigateToSignIn
@@ -57,7 +57,7 @@ fun AuralisNavHost(
         libraryScreen(
             actions,
             onSignIn = navController::navigateToSignIn,
-            onOpenSavedAlbums = { navController.navigate(SavedAlbumsRoute) },
+            onOpenCollection = navController::navigateToLibraryCollection,
             onBack = { navController.popBackStack() },
         )
         settingsScreen(onSignIn = navController::navigateToSignIn, onSignInDone = { navController.popBackStack() })

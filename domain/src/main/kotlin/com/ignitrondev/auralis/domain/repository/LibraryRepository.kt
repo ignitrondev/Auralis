@@ -4,7 +4,8 @@
 package com.ignitrondev.auralis.domain.repository
 
 import com.ignitrondev.auralis.domain.model.ListeningHistory
-import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.Page
 
 /**
@@ -16,10 +17,11 @@ interface LibraryRepository {
     suspend fun history(): ListeningHistory
 
     /**
-     * Albums saved to the account's library, most recently saved first, one page at a time.
-     * Pass the previous page's [Page.nextPageToken] to get the next one.
+     * One kind of item in the account's library, as the account orders it, one page at a time.
+     * Pass the previous page's [Page.nextPageToken] to get the next one. Items are of the kind
+     * asked for: albums, playlists or artists.
      */
-    suspend fun savedAlbums(pageToken: String? = null): Page<MusicAlbum>
+    suspend fun collection(collection: LibraryCollection, pageToken: String? = null): Page<CatalogItem>
 
     /** Whether the account liked [trackId]. */
     suspend fun isTrackLiked(trackId: String): Boolean

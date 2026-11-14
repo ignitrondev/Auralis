@@ -10,7 +10,8 @@ import com.ignitrondev.auralis.core.ui.catalogState
 import com.ignitrondev.auralis.domain.auth.AuthRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.domain.model.ListeningHistory
-import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.repository.CatalogException
 import com.ignitrondev.auralis.domain.repository.LibraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,11 +29,16 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-/** What Library shows for a signed-in account. */
-data class LibraryContent(val albums: List<MusicAlbum>, val history: ListeningHistory)
+/** What Library shows for a signed-in account: the first page of each collection, and history. */
+data class LibraryContent(
+    val collections: Map<LibraryCollection, List<CatalogItem>>,
+    val history: ListeningHistory,
+) {
+    fun items(collection: LibraryCollection): List<CatalogItem> = collections[collection].orEmpty()
+}
 
 /**
- * The account's saved albums and listening history. They load only when signed in, and reload
+ * The account's playlists, albums, artists and listening history. They load only when signed in, and reload
  * when the account changes and each time the screen is shown again, because every listen changes
  * the history. Signed out or with an expired session the state is an error with
  * [CatalogException.Reason.SignInRequired].
@@ -64,20 +70,23 @@ class LibraryViewModel @Inject constructor(
     fun retry() = reloads.update { it + 1 }
 
     /**
-     * Albums and history load in parallel. The history is the main content, so only its failure
-     * fails the screen; albums that cannot load are left out, unless the session was rejected.
+     * Collections and history load in parallel. The history is the main content, so only its
+     * failure fails the screen; a collection that cannot load is left out, unless the session was
+     * rejected.
      */
     private suspend fun loadContent(): LibraryContent = coroutineScope {
-        val albums = async {
-            try {
-                library.savedAlbums().items
-            } catch (error: CatalogException) {
-                if (error.reason == CatalogException.Reason.SignInRequired) throw error
-                emptyList()
+        val collections = LibraryCollection.entries.associateWith { collection ->
+            async {
+                try {
+                    library.collection(collection).items
+                } catch (error: CatalogException) {
+                    if (error.reason == CatalogException.Reason.SignInRequired) throw error
+                    emptyList()
+                }
             }
         }
         val history = library.history()
-        LibraryContent(albums.await(), history)
+        LibraryContent(collections.mapValues { it.value.await() }, history)
     }
 
     private companion object {
