@@ -76,21 +76,36 @@ class AccountLibraryParserTest {
         assertTrue(LikeStatusParser.isLiked("other", root))
     }
 
-    @Test
-    fun likeStatusIsReadFromTheEntityWhoseKeyNamesTheTrack(): Unit {
-        // The key is a base64 protobuf: field 1 (length 11) holds the video ID.
-        fun key(videoId: String) = java.util.Base64.getEncoder().encodeToString(byteArrayOf(0x0a, 0x0b) + videoId.toByteArray() + byteArrayOf(0x20, 0x01))
-        val root = InnerTubeSession.json.parseToJsonElement(
+    /** The shape YouTube Music web sends today, reduced to the fields the parser reads. */
+    private fun viewModelResponse(trackId: String, overlayStatus: String, updatedStatus: String?) =
+        InnerTubeSession.json.parseToJsonElement(
             """
-            {"playerOverlays": {"playerOverlayRenderer": {}},
+            {"playerOverlays": {"playerOverlayRenderer": {
+               "segmentedLikeDislikeButtonViewModel": {"likeButtonViewModel": {"likeButtonViewModel": {
+                 "likeStatusEntityKey": "EgtzMDAwMDAwMDAwMSA%3D",
+                 "likeStatusEntity": {"key": "EgtzMDAwMDAwMDAwMSA%3D", "likeStatus": "$overlayStatus"},
+                 "toggleButtonViewModel": {"toggleButtonViewModel": {"defaultButtonViewModel": {"buttonViewModel": {
+                   "onTap": {"serialCommand": {"commands": [{"innertubeCommand": {"likeEndpoint": {"status": "LIKE", "target": {"videoId": "$trackId"}}}}]}}
+                 }}}}
+               }}}}},
              "frameworkUpdates": {"entityBatchUpdate": {"mutations": [
-               {"payload": {"likeStatusEntity": {"key": "${key("otherTrack1")}", "likeStatus": "INDIFFERENT"}}},
-               {"payload": {"likeStatusEntity": {"key": "${key("song00000A1")}", "likeStatus": "LIKE"}}}
+               {"payload": {"likeStatusEntity": {"key": "otherKey", "likeStatus": "LIKE"}}}
+               ${updatedStatus?.let { ", {\"payload\": {\"likeStatusEntity\": {\"key\": \"EgtzMDAwMDAwMDAwMSA%3D\", \"likeStatus\": \"$it\"}}}" }.orEmpty()}
              ]}}}
             """.trimIndent(),
         ).jsonObject
-        assertTrue(LikeStatusParser.isLiked("song00000A1", root))
-        assertFalse(LikeStatusParser.isLiked("otherTrack1", root))
+
+    @Test
+    fun likeStatusIsReadFromThePlayerOverlayViewModel(): Unit {
+        assertTrue(LikeStatusParser.isLiked("song00000A1", viewModelResponse("song00000A1", "LIKE", updatedStatus = null)))
+        assertFalse(LikeStatusParser.isLiked("song00000A1", viewModelResponse("song00000A1", "INDIFFERENT", updatedStatus = null)))
+        // The entity update for the same key is newer than the overlay's copy; another key is ignored.
+        assertTrue(LikeStatusParser.isLiked("song00000A1", viewModelResponse("song00000A1", "INDIFFERENT", updatedStatus = "LIKE")))
+    }
+
+    @Test(expected = UnexpectedResponseException::class)
+    fun aViewModelForAnotherTrackIsNotUsed() {
+        LikeStatusParser.isLiked("song00000A1", viewModelResponse("otherTrack1", "LIKE", updatedStatus = null))
     }
 
     @Test(expected = UnexpectedResponseException::class)
