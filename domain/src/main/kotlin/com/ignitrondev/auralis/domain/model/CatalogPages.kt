@@ -35,11 +35,18 @@ data class SearchResults(
 /**
  * @property trackCountText Track count and length as shown by the source, for example "22 songs".
  */
+/**
+ * @property libraryPlaylistId The album's playlist, which is what the account saves when the album
+ * is added to the library. Null when the service does not give one.
+ * @property isSavedToLibrary Whether the signed-in account has saved the album. Always false signed out.
+ */
 data class AlbumDetail(
     val album: MusicAlbum,
     val tracks: List<MusicTrack>,
     val description: String?,
     val trackCountText: String?,
+    val libraryPlaylistId: String? = null,
+    val isSavedToLibrary: Boolean = false,
 )
 
 data class ArtistDetail(

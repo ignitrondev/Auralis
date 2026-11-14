@@ -142,11 +142,17 @@ internal object AlbumParser {
             ) as? MusicTrack
         }.orEmpty()
 
+        val buttons = header.arr("buttons").objects()
         return AlbumDetail(
             album = album,
             tracks = tracks,
             description = header.path("description", "musicDescriptionShelfRenderer").obj("description").text(),
             trackCountText = header.obj("secondSubtitle").text(),
+            libraryPlaylistId = buttons.firstNotNullOfOrNull {
+                it.path("musicPlayButtonRenderer", "playNavigationEndpoint", "watchPlaylistEndpoint").str("playlistId")
+            },
+            // The save button: toggled when the signed-in account has the album in its library.
+            isSavedToLibrary = buttons.any { it.renderer("toggleButtonRenderer")?.bool("isToggled") == true },
         )
     }
 }
@@ -253,4 +259,37 @@ internal object LibraryAlbumsParser {
             .mapNotNull { it.renderer("musicTwoRowItemRenderer")?.twoRowItem() as? MusicAlbum }
             .distinctBy { it.id }
     }
+}
+
+/**
+ * The like status of a track in a `next` response. Two shapes are known:
+ * - a `likeButtonRenderer` whose target is the track (older responses, and list rows);
+ * - a `likeStatusEntity` in `frameworkUpdates`, whose `key` is a base64 protobuf that contains the
+ *   track ID (current YouTube Music web responses).
+ * Both are matched by the track rather than by position, so another track's status (for example a
+ * queue item) is never taken for this one.
+ */
+internal object LikeStatusParser {
+    fun isLiked(trackId: String, root: JsonObject): Boolean {
+        val buttons = root.findObjects("likeButtonRenderer")
+        buttons.firstOrNull { it.path("target").str("videoId") == trackId }?.let { return it.str("likeStatus") == LIKE }
+
+        val entities = root.findObjects("likeStatusEntity")
+        entities.firstOrNull { it.str("key")?.let { key -> keyMentions(key, trackId) } == true }
+            ?.let { return it.str("likeStatus") == LIKE }
+
+        // Shape only, for diagnostics: never IDs or account data.
+        throw UnexpectedResponseException(
+            "like status: none for the track (${buttons.size} buttons, ${entities.size} entities; keys ${root.keys.sorted()})",
+        )
+    }
+
+    private fun keyMentions(key: String, trackId: String): Boolean {
+        val bytes = runCatching { java.util.Base64.getDecoder().decode(key) }
+            .recoverCatching { java.util.Base64.getUrlDecoder().decode(key) }
+            .getOrNull() ?: return false
+        return String(bytes, Charsets.ISO_8859_1).contains(trackId)
+    }
+
+    private const val LIKE = "LIKE"
 }

@@ -3,7 +3,10 @@
  */
 package com.ignitrondev.auralis.feature.browse
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
@@ -11,11 +14,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ignitrondev.auralis.core.designsystem.component.GlassButton
+import com.ignitrondev.auralis.core.designsystem.icon.AuralisIcons
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
 import com.ignitrondev.auralis.core.ui.CatalogActions
 import com.ignitrondev.auralis.core.ui.CatalogRow
@@ -30,6 +36,7 @@ fun AlbumDestination(
     viewModel: AlbumViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val save by viewModel.save.collectAsStateWithLifecycle()
     DetailScaffold(state = state, onBack = onBack, onRetry = viewModel::retry) { detail ->
         item(key = "header") {
             DetailHeader(
@@ -40,6 +47,9 @@ fun AlbumDestination(
                     detail.trackCountText,
                 ),
             )
+        }
+        if (save.visible) {
+            item(key = "save") { SaveToLibrary(save = save, onToggle = viewModel::toggleSaved) }
         }
         itemsIndexed(detail.tracks, key = { index, track -> "$index-${track.id}" }) { index, track ->
             CatalogRow(
@@ -129,4 +139,30 @@ private fun Description(text: String) {
         color = AuralisTheme.colors.contentTertiary,
         modifier = Modifier.padding(horizontal = AuralisTheme.spacing.screenGutter, vertical = AuralisTheme.spacing.xl),
     )
+}
+
+/** Save state is shown by icon and label (check vs plus), never by colour (spec 8.2.1). */
+@Composable
+private fun SaveToLibrary(save: SaveUiState, onToggle: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = AuralisTheme.spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.sm),
+    ) {
+        GlassButton(
+            text = stringResource(if (save.saved) R.string.feature_browse_in_library else R.string.feature_browse_save_to_library),
+            icon = if (save.saved) AuralisIcons.Saved else AuralisIcons.Add,
+            onClick = onToggle,
+            enabled = !save.pending,
+        )
+        if (save.failed) {
+            Text(
+                text = stringResource(R.string.feature_browse_save_failed),
+                style = AuralisTheme.typography.bodySmall,
+                color = AuralisTheme.colors.contentSecondary,
+            )
+        }
+    }
 }

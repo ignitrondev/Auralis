@@ -37,3 +37,23 @@ internal fun JsonElement?.text(): String? =
 
 /** The renderer wrapped in an item, for example the value of `{ "musicShelfRenderer": { … } }`. */
 internal fun JsonObject.renderer(name: String): JsonObject? = this[name] as? JsonObject
+
+internal fun JsonElement?.bool(key: String): Boolean? =
+    ((this as? JsonObject)?.get(key) as? JsonPrimitive)?.contentOrNull?.toBooleanStrictOrNull()
+
+/** Every object stored under [key], anywhere in the tree, in document order. */
+internal fun JsonElement.findObjects(key: String): List<JsonObject> {
+    val found = mutableListOf<JsonObject>()
+    fun walk(element: JsonElement) {
+        when (element) {
+            is JsonObject -> element.forEach { (name, value) ->
+                if (name == key && value is JsonObject) found += value
+                walk(value)
+            }
+            is JsonArray -> element.forEach(::walk)
+            else -> Unit
+        }
+    }
+    walk(this)
+    return found
+}

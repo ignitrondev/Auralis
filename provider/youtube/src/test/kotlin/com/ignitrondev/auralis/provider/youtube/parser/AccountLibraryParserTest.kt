@@ -61,6 +61,38 @@ class AccountLibraryParserTest {
         assertTrue(albums[1].isExplicit)
     }
 
+    @Test
+    fun likeStatusIsReadFromTheButtonForThatTrack(): Unit {
+        // Other tracks' buttons (for example in the queue) must not be mistaken for the current one.
+        val root = InnerTubeSession.json.parseToJsonElement(
+            """
+            {"contents": {"queue": [{"likeButtonRenderer": {"target": {"videoId": "other"}, "likeStatus": "LIKE"}}]},
+             "playerOverlays": {"playerOverlayRenderer": {"actions": [
+               {"likeButtonRenderer": {"target": {"videoId": "song00000A1"}, "likeStatus": "INDIFFERENT"}}
+             ]}}}
+            """.trimIndent(),
+        ).jsonObject
+        assertFalse(LikeStatusParser.isLiked("song00000A1", root))
+        assertTrue(LikeStatusParser.isLiked("other", root))
+    }
+
+    @Test
+    fun likeStatusIsReadFromTheEntityWhoseKeyNamesTheTrack(): Unit {
+        // The key is a base64 protobuf: field 1 (length 11) holds the video ID.
+        fun key(videoId: String) = java.util.Base64.getEncoder().encodeToString(byteArrayOf(0x0a, 0x0b) + videoId.toByteArray() + byteArrayOf(0x20, 0x01))
+        val root = InnerTubeSession.json.parseToJsonElement(
+            """
+            {"playerOverlays": {"playerOverlayRenderer": {}},
+             "frameworkUpdates": {"entityBatchUpdate": {"mutations": [
+               {"payload": {"likeStatusEntity": {"key": "${key("otherTrack1")}", "likeStatus": "INDIFFERENT"}}},
+               {"payload": {"likeStatusEntity": {"key": "${key("song00000A1")}", "likeStatus": "LIKE"}}}
+             ]}}}
+            """.trimIndent(),
+        ).jsonObject
+        assertTrue(LikeStatusParser.isLiked("song00000A1", root))
+        assertFalse(LikeStatusParser.isLiked("otherTrack1", root))
+    }
+
     @Test(expected = UnexpectedResponseException::class)
     fun aPageWithoutTheExpectedLayoutIsReported() {
         HistoryParser.parse(InnerTubeSession.json.parseToJsonElement("""{"contents":{}}""").jsonObject)

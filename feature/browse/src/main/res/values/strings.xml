@@ -5,4 +5,7 @@
         <item quantity="one">Showing the first song.</item>
         <item quantity="other">Showing the first %1$d songs.</item>
     </plurals>
+    <string name="feature_browse_save_to_library">Save to library</string>
+    <string name="feature_browse_in_library">In your library</string>
+    <string name="feature_browse_save_failed">Couldn\'t update your library. Try again.</string>
 </resources>
