@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -36,7 +37,9 @@ private val blurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 @Composable
 fun AmbientBackdrop(uri: String?, modifier: Modifier = Modifier) {
     val colors = AuralisTheme.colors
-    Box(modifier = modifier.fillMaxSize().background(colors.background)) {
+    // Clipped: the scaled, blurred artwork must not spill past the screen it belongs to (it showed
+    // as a tinted band over the page below while Now Playing slid away).
+    Box(modifier = modifier.fillMaxSize().clipToBounds().background(colors.background)) {
         if (uri != null && blurSupported) {
             AsyncImage(
                 model = uri,

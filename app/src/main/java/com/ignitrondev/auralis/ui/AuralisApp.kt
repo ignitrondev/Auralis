@@ -63,8 +63,10 @@ fun AuralisApp(
     // Detail and sign-in pages are not tabs: keep the tab they were opened from selected.
     var selectedTab by rememberSaveable { mutableStateOf(TopLevelDestination.HOME) }
     TopLevelDestination.entries.firstOrNull { currentDestination.isInHierarchy(it) }?.let { selectedTab = it }
-    // Now Playing is full screen: no floating bar or mini player over it.
-    val showChrome = currentDestination?.hasRoute(NowPlayingRoute::class) != true
+    // Now Playing is full screen: no floating bar or mini player over it. Visible entries (not the
+    // current destination) keep them hidden until the sheet has finished sliding away.
+    val visibleEntries by navController.visibleEntries.collectAsStateWithLifecycle()
+    val showChrome = visibleEntries.none { it.destination.hasRoute(NowPlayingRoute::class) }
 
     GlassLayers(
         modifier = modifier

@@ -4,6 +4,7 @@
 package com.ignitrondev.auralis.feature.player.navigation
 
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -23,7 +24,7 @@ fun NavGraphBuilder.nowPlayingScreen(onCollapse: () -> Unit) {
     composable<NowPlayingRoute>(
         enterTransition = { slideInVertically(tween(320)) { it } },
         exitTransition = { fadeOut(tween(160)) },
-        popEnterTransition = null,
+        popEnterTransition = { fadeIn(tween(160)) },
         popExitTransition = { slideOutVertically(tween(280)) { it } },
     ) {
         NowPlayingScreen(onCollapse = onCollapse)

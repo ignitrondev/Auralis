@@ -3,10 +3,16 @@
  */
 package com.ignitrondev.auralis.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import com.ignitrondev.auralis.core.ui.CatalogActions
 import com.ignitrondev.auralis.domain.model.MusicTrack
@@ -18,6 +24,7 @@ import com.ignitrondev.auralis.feature.browse.navigation.navigateToPlaylist
 import com.ignitrondev.auralis.feature.home.navigation.HomeRoute
 import com.ignitrondev.auralis.feature.home.navigation.homeScreen
 import com.ignitrondev.auralis.feature.library.navigation.libraryScreen
+import com.ignitrondev.auralis.feature.player.navigation.NowPlayingRoute
 import com.ignitrondev.auralis.feature.player.navigation.nowPlayingScreen
 import com.ignitrondev.auralis.feature.search.navigation.searchScreen
 import com.ignitrondev.auralis.feature.settings.navigation.navigateToSignIn
@@ -42,6 +49,16 @@ fun AuralisNavHost(
         navController = navController,
         startDestination = HomeRoute,
         modifier = modifier,
+        // Short fades between pages. Now Playing is a sheet over the current page: the page under
+        // it stays still and fully visible while the sheet slides up or down.
+        enterTransition = { fadeIn(tween(PAGE_FADE_MS)) },
+        exitTransition = {
+            if (targetState.destination.hasRoute(NowPlayingRoute::class)) ExitTransition.KeepUntilTransitionsFinished else fadeOut(tween(PAGE_FADE_MS))
+        },
+        popEnterTransition = {
+            if (initialState.destination.hasRoute(NowPlayingRoute::class)) EnterTransition.None else fadeIn(tween(PAGE_FADE_MS))
+        },
+        popExitTransition = { fadeOut(tween(PAGE_FADE_MS)) },
     ) {
         homeScreen(actions)
         searchScreen(actions)
@@ -63,3 +80,5 @@ internal fun queueStartingAt(track: MusicTrack, queue: List<MusicTrack>): Pair<L
 }
 
 private fun PlayerController.play(start: Pair<List<MusicTrack>, Int>) = play(start.first, start.second)
+
+private const val PAGE_FADE_MS = 200
