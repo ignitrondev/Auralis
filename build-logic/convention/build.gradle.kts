@@ -19,6 +19,7 @@ kotlin {
 
 dependencies {
     compileOnly(libs.android.gradle.plugin)
+    compileOnly(libs.kotlin.gradle.plugin)
 }
 
 gradlePlugin {
@@ -42,6 +43,10 @@ gradlePlugin {
         register("hilt") {
             id = libs.plugins.auralis.hilt.get().pluginId
             implementationClass = "HiltConventionPlugin"
+        }
+        register("jvmLibrary") {
+            id = libs.plugins.auralis.jvm.library.get().pluginId
+            implementationClass = "JvmLibraryConventionPlugin"
         }
     }
 }
