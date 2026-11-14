@@ -9,14 +9,15 @@ import com.ignitrondev.auralis.core.auth.SessionManager
 import com.ignitrondev.auralis.domain.auth.AuthRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.domain.update.AppInfo
-import com.ignitrondev.auralis.domain.update.AppReleaseRepository
-import com.ignitrondev.auralis.domain.update.AppVersion
-import com.ignitrondev.auralis.domain.update.findUpdate
+import com.ignitrondev.auralis.domain.update.AppUpdates
 import com.ignitrondev.auralis.provider.api.ProviderSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,32 +38,37 @@ sealed interface UpdateState {
 class SettingsViewModel @Inject constructor(
     private val auth: AuthRepository,
     private val appInfo: AppInfo,
-    private val releases: AppReleaseRepository,
+    private val updates: AppUpdates,
 ) : ViewModel() {
     val authState: StateFlow<AuthState> = auth.state
 
     val installedVersion: String get() = appInfo.versionName
 
-    private val _update = MutableStateFlow<UpdateState>(UpdateState.Idle)
-    val update: StateFlow<UpdateState> = _update.asStateFlow()
+    private val check = MutableStateFlow<UpdateState>(UpdateState.Idle)
+
+    /**
+     * An update found earlier (by the check on app start) shows right away; a check the user asks
+     * for shows its own progress and result.
+     */
+    val update: StateFlow<UpdateState> = combine(check, updates.available) { check, available ->
+        when {
+            check == UpdateState.Checking -> check
+            available != null -> UpdateState.Available(available.version.toString(), available.apkUrl ?: available.pageUrl, available.pageUrl)
+            else -> check
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, UpdateState.Idle)
 
     fun signOut() {
         viewModelScope.launch { auth.signOut() }
     }
 
     fun checkForUpdates() {
-        if (_update.value == UpdateState.Checking) return
-        _update.value = UpdateState.Checking
+        if (check.value == UpdateState.Checking) return
+        check.value = UpdateState.Checking
         viewModelScope.launch {
-            _update.value = try {
-                // A build without a proper version (a local build) treats every release as newer.
-                val installed = AppVersion.parse(appInfo.versionName) ?: AppVersion.parse("0")!!
-                val update = findUpdate(installed, releases.releases())
-                if (update == null) {
-                    UpdateState.UpToDate
-                } else {
-                    UpdateState.Available(update.version.toString(), update.apkUrl ?: update.pageUrl, update.pageUrl)
-                }
+            check.value = try {
+                // A found update shows through [AppUpdates.available].
+                if (updates.checkNow() == null) UpdateState.UpToDate else UpdateState.Idle
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {

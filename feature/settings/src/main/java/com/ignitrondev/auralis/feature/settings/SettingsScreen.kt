@@ -168,7 +168,14 @@ private fun UpdatesContent(installedVersion: String, update: UpdateState, onChec
             is UpdateState.Available -> stringResource(R.string.feature_settings_update_available, update.version)
             UpdateState.Failed -> stringResource(R.string.feature_settings_update_failed)
         }
-        message?.let { Text(it, style = AuralisTheme.typography.body, color = colors.contentSecondary) }
+        message?.let {
+            Text(
+                it,
+                style = AuralisTheme.typography.body,
+                // An available update reads as news, like the dot on the tab; other results are quiet.
+                color = if (update is UpdateState.Available) colors.contentPrimary else colors.contentSecondary,
+            )
+        }
         if (update is UpdateState.Available) {
             GlassButton(
                 text = stringResource(R.string.feature_settings_download_update),
@@ -184,5 +191,10 @@ private fun UpdatesContent(installedVersion: String, update: UpdateState, onChec
                 enabled = update != UpdateState.Checking,
             )
         }
+        Text(
+            stringResource(R.string.feature_settings_update_auto_check),
+            style = AuralisTheme.typography.bodySmall,
+            color = colors.contentTertiary,
+        )
     }
 }

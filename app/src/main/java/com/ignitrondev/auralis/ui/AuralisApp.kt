@@ -73,6 +73,8 @@ fun AuralisApp(
 ) {
     val player = appViewModel.player
     val playerState by player.state.collectAsStateWithLifecycle()
+    val availableUpdate by appViewModel.availableUpdate.collectAsStateWithLifecycle()
+    val updateBadge = availableUpdate?.let { stringResource(R.string.settings_update_badge, it.version.toString()) }
     val track = playerState.currentTrack
     val spacing = AuralisTheme.spacing
     val motion = AuralisTheme.motion
@@ -153,6 +155,7 @@ fun AuralisApp(
                                     onClick = { navController.navigateToTopLevel(destination) },
                                     icon = destination.icon,
                                     label = stringResource(destination.labelRes),
+                                    badge = if (destination == TopLevelDestination.SETTINGS) updateBadge else null,
                                 )
                             }
                         }
