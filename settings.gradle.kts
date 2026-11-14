@@ -21,4 +21,5 @@ rootProject.name = "Auralis"
 
 include(":app")
 include(":core:designsystem")
+include(":domain")
 include(":feature:home")
