@@ -67,3 +67,22 @@ Metrolist, the reference consumer, plays music with:
    work (Phase 3) does not depend on playback and can continue.
 
 **Decision (2026-11-14): option 1, a WebView BotGuard PO-token provider**, built in Phase 4.
+
+## Follow-up: PO token on a device (2026-11-14)
+
+`:provider:botguard` runs YouTube's BotGuard in a hidden WebView on the Pixel 6a (Android 17)
+and mints tokens in about 0.7–1.3 s. With a fresh visitor id and a visitor-bound token,
+`/player` still answered `LOGIN_REQUIRED` "Please sign in" for WEB_REMIX, WEB, IOS and TVHTML5:
+
+| Network | Result |
+| --- | --- |
+| Home Wi-Fi (laptop and phone) | `LOGIN_REQUIRED` for every client, with and without a token |
+| Mobile data, carrier 3 (Indonesia) | `LOGIN_REQUIRED` for every client, with and without a token |
+
+The clients InnerTubeX notes as anonymous-capable (VISIONOS_0_1, TVHTML5_SAMSUNG, ANDROID_VR)
+also failed. Metrolist users report the same "Sign in to confirm you're not a bot" error
+(MetrolistGroup/Metrolist#4192, #4242). The maintainers attribute it to IP blocks and suggest
+a VPN, so it depends on the network and region, not on the client code.
+
+**Decision:** playback stays signed-out by default (BotGuard PO token). When YouTube demands
+sign-in, the app offers YouTube Music sign-in as a fallback (spec 12.1).

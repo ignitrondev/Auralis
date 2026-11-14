@@ -31,6 +31,7 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.data)
     implementation(projects.provider.youtube)
+    implementation(projects.provider.botguard)
     implementation(projects.core.ui)
     implementation(projects.feature.browse)
     implementation(projects.feature.home)

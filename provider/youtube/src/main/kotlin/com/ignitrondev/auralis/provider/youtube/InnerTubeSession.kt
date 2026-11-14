@@ -26,6 +26,7 @@ import kotlinx.serialization.json.Json
 internal class InnerTubeSession(
     val httpClient: HttpClient = defaultHttpClient(),
     logger: InnerTubeLogger = InnerTubeLogger.NONE,
+    attestation: AttestationProvider? = null,
 ) : AutoCloseable {
     val innerTube = InnerTube(httpClient = httpClient, logger = logger).apply {
         // InnerTubeX would send the full device tag (for example "en-ID"), which search rejects.
@@ -44,6 +45,7 @@ internal class InnerTubeSession(
         ),
         cipherService = cipherService,
         innerTube = innerTube,
+        tokenProvider = attestation?.let(::AttestationTokenProvider),
         logger = logger,
     )
 

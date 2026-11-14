@@ -10,6 +10,9 @@ import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import com.ignitrondev.auralis.domain.repository.CatalogException
 import com.ignitrondev.auralis.provider.api.CatalogProvider
+import com.ignitrondev.auralis.provider.api.PlayableStream
+import com.ignitrondev.auralis.provider.api.StreamException
+import com.ignitrondev.auralis.provider.api.StreamProvider
 import com.ignitrondev.auralis.provider.youtube.parser.AlbumParser
 import com.ignitrondev.auralis.provider.youtube.parser.ArtistParser
 import com.ignitrondev.auralis.provider.youtube.parser.FeedParser
@@ -18,7 +21,12 @@ import com.ignitrondev.auralis.provider.youtube.parser.SOURCE_ID
 import com.ignitrondev.auralis.provider.youtube.parser.SearchParser
 import com.ignitrondev.auralis.provider.youtube.parser.UnexpectedResponseException
 import com.metrolist.innertubex.InnerTubeHttpException
+import com.metrolist.innertubex.InnerTubeLogger
 import com.metrolist.innertubex.bodyAsTextLimited
+import com.metrolist.innertubex.extraction.AudioQuality
+import com.metrolist.innertubex.extraction.ContentHints
+import com.metrolist.innertubex.extraction.StreamResolveException
+import com.metrolist.innertubex.extraction.generateClientPlaybackNonce
 import com.metrolist.innertubex.models.YouTubeClient
 import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.CancellationException
@@ -37,9 +45,22 @@ import java.io.IOException
  */
 class YouTubeMusicProvider internal constructor(
     private val session: InnerTubeSession,
-) : CatalogProvider, AutoCloseable {
+) : CatalogProvider, StreamProvider, AutoCloseable {
 
-    constructor() : this(InnerTubeSession())
+    /**
+     * @param attestation Mints BotGuard tokens for signed-out playback. Without it the catalog
+     * still works, but YouTube refuses most anonymous streams.
+     * @param logger Receives redacted diagnostics from the integration.
+     */
+    constructor(
+        attestation: AttestationProvider? = null,
+        logger: ProviderLogger? = null,
+    ) : this(
+        InnerTubeSession(
+            attestation = attestation,
+            logger = logger?.toInnerTubeLogger() ?: InnerTubeLogger.NONE,
+        ),
+    )
 
     override val sourceId: String = SOURCE_ID
 
@@ -82,6 +103,49 @@ class YouTubeMusicProvider internal constructor(
         val browseId = if (id.startsWith("VL")) id else "VL$id"
         PlaylistParser.parse(browseId, browse(browseId))
     }
+
+    /**
+     * Resolves a direct audio URL for [trackId]. SABR and HLS are disabled: the player streams a
+     * plain progressive URL, in byte-range chunks when the server requires it.
+     */
+    override suspend fun resolveStream(trackId: String): PlayableStream =
+        try {
+            val hints = ContentHints().withStreamCapabilities(allowHls = false, allowSabr = false, allowBoundedRange = true)
+            val stream = session.extractor.extract(
+                videoId = trackId,
+                hints = hints,
+                excludedClients = emptySet(),
+                audioQuality = AudioQuality.HIGH,
+                clientPlaybackNonce = generateClientPlaybackNonce(),
+            ) ?: throw StreamException(StreamException.Reason.NoStream, "no playable stream")
+            PlayableStream(
+                trackId = trackId,
+                url = stream.audioUrl,
+                headers = stream.headers,
+                mimeType = stream.mimeType,
+                contentLengthBytes = stream.contentLengthBytes,
+                chunkSizeBytes = stream.rangeChunkSizeBytes.takeIf { stream.requireBoundedRange || stream.useRangeChunks },
+                expiresAtMs = stream.expiresAt?.toEpochMilliseconds(),
+                loudnessDb = stream.loudnessDb,
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: StreamException) {
+            throw error
+        } catch (error: StreamResolveException) {
+            val reason = when (error.reason) {
+                StreamResolveException.Reason.NETWORK -> StreamException.Reason.Network
+                StreamResolveException.Reason.UNAVAILABLE,
+                StreamResolveException.Reason.AGE_RESTRICTED,
+                StreamResolveException.Reason.EXPLICIT_UNSUPPORTED,
+                StreamResolveException.Reason.NO_MUSIC_VIDEO,
+                -> StreamException.Reason.Unavailable
+                else -> StreamException.Reason.NoStream
+            }
+            throw StreamException(reason, "stream: ${error.reason}", error)
+        } catch (error: IOException) {
+            throw StreamException(StreamException.Reason.Network, "stream: network", error)
+        }
 
     override fun close() = session.close()
 

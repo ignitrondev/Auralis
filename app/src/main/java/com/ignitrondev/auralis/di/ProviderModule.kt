@@ -3,22 +3,33 @@
  */
 package com.ignitrondev.auralis.di
 
+import android.content.Context
 import com.ignitrondev.auralis.provider.api.CatalogProvider
+import com.ignitrondev.auralis.provider.api.StreamProvider
+import com.ignitrondev.auralis.provider.botguard.WebViewAttestationProvider
 import com.ignitrondev.auralis.provider.youtube.YouTubeMusicProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
  * Chooses the music provider. YouTube Music is the core source (spec section 6); only this
- * module knows the concrete provider class.
+ * module knows the concrete provider class. One instance serves the catalog and streams.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 object ProviderModule {
     @Provides
     @Singleton
-    fun provideCatalogProvider(): CatalogProvider = YouTubeMusicProvider()
+    fun provideYouTubeMusic(@ApplicationContext context: Context): YouTubeMusicProvider =
+        YouTubeMusicProvider(attestation = WebViewAttestationProvider(context))
+
+    @Provides
+    fun provideCatalogProvider(provider: YouTubeMusicProvider): CatalogProvider = provider
+
+    @Provides
+    fun provideStreamProvider(provider: YouTubeMusicProvider): StreamProvider = provider
 }

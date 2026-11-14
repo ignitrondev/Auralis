@@ -38,4 +38,7 @@ used under its own license; their copyright and license notices are kept.
 The full font licenses ship with the app in
 core/designsystem/src/main/assets/licenses/.
 
+The BotGuard proof-of-origin flow in :provider:botguard follows the approach
+documented by NewPipe and Metrolist (both GPL-3.0); the code is Auralis's own.
+
 This list is updated whenever a dependency, font or other asset is added.

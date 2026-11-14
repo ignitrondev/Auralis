@@ -211,6 +211,38 @@ class LiveSpikeTest {
         }
     }
 
+    @Test
+    fun anonymousClientsByOverride(): Unit = runBlocking {
+        assumeTrue("live spike disabled; run with -Plive", live)
+        val logger = InnerTubeLogger { event ->
+            if (event.level >= InnerTubeLogLevel.WARN) println("ITX ${event.tag}: ${event.message} ${event.details.mapValues { if ("://" in it.value) "<url>" else it.value }}")
+        }
+        for (client in listOf("VISIONOS_0_1", "TVHTML5_SAMSUNG", "ANDROID_VR_1_65_10", "WEB_REMIX")) {
+            InnerTubeSession(logger = logger).use { session ->
+                val started = System.currentTimeMillis()
+                val result = runCatching {
+                    val stream = session.extractor.extract(
+                        videoId = SAMPLE_VIDEO_ID,
+                        hints = ContentHints(playbackClientOverrideId = client)
+                            .withStreamCapabilities(allowHls = false, allowSabr = false, allowBoundedRange = true),
+                        excludedClients = emptySet(),
+                        audioQuality = AudioQuality.HIGH,
+                        clientPlaybackNonce = generateClientPlaybackNonce(),
+                    ) ?: error("null stream")
+                    val ranges = (0 until 3).map { index ->
+                        val from = index * 512L * 1024
+                        session.httpClient.get(stream.audioUrl) {
+                            stream.headers.forEach { (key, value) -> header(key, value) }
+                            header("Range", "bytes=$from-${from + 512 * 1024 - 1}")
+                        }.status.value
+                    }
+                    "client=${stream.clientName} mime=${stream.mimeType} chunk=${stream.rangeChunkSizeBytes} ranges=$ranges"
+                }.getOrElse { "FAILED ${it.message}" }
+                println("SPIKE override $client: $result (${System.currentTimeMillis() - started} ms)")
+            }
+        }
+    }
+
     private class StopSpike : RuntimeException()
 
     private suspend fun HttpResponse.json(name: String): JsonObject {

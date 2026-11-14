@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title></title><script>
+/*
+ * Copyright (c) 2026 IgnitronDev
+ *
+ * Runs YouTube's BotGuard program and mints proof-of-origin tokens for Auralis.
+ * Only this page is ever loaded in the WebView. Results go back through the
+ * AuralisBotGuard bridge; nothing is logged.
+ */
+var auralis = { snapshot: null, signals: [], minter: null };
+
+/** Loads the interpreter, runs the program and resolves with the BotGuard response. */
+function auralisStart(challenge) {
+  return new Promise(function (resolve, reject) {
+    try {
+      new Function(challenge.interpreterJs)();
+    } catch (e) {
+      return reject(new Error('interpreter: ' + e.message));
+    }
+    var vm = window[challenge.globalName];
+    if (!vm || typeof vm.a !== 'function') return reject(new Error('BotGuard VM not found'));
+    var onFunctions = function (asyncSnapshot) { auralis.snapshot = asyncSnapshot; };
+    try {
+      vm.a(challenge.program, onFunctions, true, undefined, function () {}, [[], []]);
+    } catch (e) {
+      return reject(new Error('program: ' + e.message));
+    }
+    var tries = 0;
+    var timer = setInterval(function () {
+      if (typeof auralis.snapshot === 'function') {
+        clearInterval(timer);
+        try {
+          auralis.snapshot(function (response) { resolve(response); },
+            [undefined, undefined, auralis.signals, undefined]);
+        } catch (e) {
+          reject(new Error('snapshot: ' + e.message));
+        }
+      } else if (++tries > 2000) {
+        clearInterval(timer);
+        reject(new Error('BotGuard did not start'));
+      }
+    }, 5);
+  });
+}
+
+/** Creates the token minter once, from the integrity token returned by the server. */
+async function auralisCreateMinter(integrityToken) {
+  var factory = auralis.signals[0];
+  if (typeof factory !== 'function') throw new Error('no minter factory');
+  var minter = factory(integrityToken);
+  if (minter && typeof minter.then === 'function') minter = await minter;
+  if (typeof minter !== 'function') throw new Error('invalid minter');
+  auralis.minter = minter;
+}
+
+/** Mints one token bound to the identifier bytes. */
+async function auralisMint(identifier) {
+  if (!auralis.minter) throw new Error('minter not ready');
+  var token = auralis.minter(identifier);
+  if (token && typeof token.then === 'function') token = await token;
+  if (!(token instanceof Uint8Array)) throw new Error('invalid token');
+  return token;
+}
+</script></head><body></body></html>
