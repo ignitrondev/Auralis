@@ -24,10 +24,11 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.dp
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisColors
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
-import dev.chrisbanes.haze.ExperimentalHazeApi
-import dev.chrisbanes.haze.HazeInput
-import dev.chrisbanes.haze.glass.GlassStyle
-import dev.chrisbanes.haze.glass.hazeGlass
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.Shadow
 import kotlin.math.max
 
 /** True inside another glass surface, so nested glass draws a light inner layer. */
@@ -37,16 +38,17 @@ private val LocalInsideGlass = staticCompositionLocalOf { false }
  * The base Liquid Glass material (spec section 8.2). Every glass component is built on it.
  *
  * It renders one of three ways:
- * - **Over a backdrop** (inside the overlay of [GlassLayers]): the backdrop is blurred, and
- *   refracted on Android 13+. Text stays readable because the glass tint includes the theme
- *   scrim. Below Android 12, where blur is unavailable, the tint is close to opaque.
+ * - **Over a backdrop** (inside the overlay of [GlassLayers]): the backdrop is blurred
+ *   (Android 12+) and refracted through a lens at the edges (Android 13+), with a specular rim
+ *   and a soft shadow. Text stays readable because the glass tint includes the theme scrim.
+ *   Below Android 12, where blur is unavailable, a near-opaque fallback tint is used instead.
  * - **Without a backdrop**: an opaque-enough fallback fill with a top-left highlight.
  * - **Nested in another glass surface**: a light inner layer, so glass never stacks heavily.
  *
- * Every variant has a hairline border so the edge stays visible in the light theme. Content gets
- * [AuralisColors.contentPrimary] as its content color. The blur itself is never animated.
+ * Every variant has a hairline border so the edge stays visible in the light theme, and a soft
+ * top-left highlight. Content gets [AuralisColors.contentPrimary] as its content color. The blur
+ * itself is never animated.
  */
-@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun GlassSurface(
     modifier: Modifier = Modifier,
@@ -62,9 +64,23 @@ fun GlassSurface(
             .clip(shape)
             .background(colors.selection)
         backdrop != null -> {
-            val style = remember(colors, shape) { glassStyle(colors, shape) }
+            val tint = remember(colors) { glassTint(colors) }
+            val shadow = remember(colors) { Shadow(color = colors.shadow) }
             Modifier
-                .hazeGlass(input = HazeInput.Sources(backdrop), style = style)
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { shape },
+                    effects = {
+                        blur(GlassBlurRadius.toPx())
+                        lens(
+                            refractionHeight = GlassLensHeight.toPx(),
+                            refractionAmount = GlassLensAmount.toPx(),
+                        )
+                    },
+                    highlight = { Highlight.Default },
+                    shadow = { shadow },
+                    onDrawSurface = { drawRect(tint) },
+                )
                 .clip(shape)
         }
         else -> Modifier
@@ -87,35 +103,21 @@ fun GlassSurface(
     }
 }
 
-/** Builds the Haze glass style from Auralis tokens, independent of the system dark setting. */
-@OptIn(ExperimentalHazeApi::class)
-private fun glassStyle(colors: AuralisColors, shape: RoundedCornerShape): GlassStyle {
-    val blurAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val tint = if (blurAvailable) {
+/**
+ * Tint drawn over the blurred backdrop. It stacks the glass tint on the theme scrim (dark scrim
+ * in dark, light scrim in light) so text stays readable over bright artwork. Without blur
+ * (below Android 12) the near-opaque fallback fill is used instead.
+ */
+private fun glassTint(colors: AuralisColors): Color =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         colors.surfaceGlass.compositeOver(colors.scrim)
     } else {
         colors.surfaceGlassFallback
     }
-    // GlassStyle.regular follows the system dark setting, but Auralis has its own theme
-    // (dark by default), so every appearance-dependent value is set explicitly.
-    return GlassStyle.regular.then {
-        shape(shape)
-        tint(tint)
-        edgeShadow(colors.shadow)
-        chromaMultiplier(1f)
-        if (colors.isDark) {
-            specularIntensity(0.38f)
-            ambientResponse(0.08f)
-            contrast(0.08f)
-            whitePoint(-0.22f)
-        } else {
-            specularIntensity(0.48f)
-            ambientResponse(0.15f)
-            contrast(0f)
-            whitePoint(0.55f)
-        }
-    }
-}
+
+private val GlassBlurRadius = 12.dp
+private val GlassLensHeight = 16.dp
+private val GlassLensAmount = 32.dp
 
 /** Soft sheen from the top-left corner, used by the fallback glass fill. */
 private fun Modifier.glassHighlight(color: Color): Modifier = drawWithCache {
