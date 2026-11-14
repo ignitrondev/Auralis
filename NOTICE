@@ -1,0 +1,31 @@
+Auralis
+Copyright (c) 2026 IgnitronDev
+
+Auralis is free software, licensed under the GNU General Public License,
+version 3 (GPL-3.0). The full license text is in the LICENSE file.
+
+Brand assets
+------------
+The names "Auralis" and "IgnitronDev" and the Auralis logo are brand assets of
+IgnitronDev. They are not licensed under the GPL-3.0. Forks must not use them
+in a way that presents the fork as the official Auralis app.
+
+Unofficial client
+-----------------
+Auralis is an independent, unofficial client. It is not affiliated with,
+endorsed by, or sponsored by YouTube or Google.
+
+Third-party components
+----------------------
+Auralis includes or depends on the following third-party components. Each is
+used under its own license; their copyright and license notices are kept.
+
+  Component                                   License
+  ------------------------------------------  --------------------------
+  AndroidX (Jetpack Compose, Activity,        Apache License 2.0
+    Lifecycle, Navigation, Test)
+  Kotlin standard library                     Apache License 2.0
+  kotlinx.serialization                       Apache License 2.0
+  Dagger / Hilt                               Apache License 2.0
+
+This list is updated whenever a dependency, font or other asset is added.
