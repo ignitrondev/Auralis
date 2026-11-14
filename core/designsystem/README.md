@@ -45,7 +45,7 @@ system font. The licenses are in `src/main/assets/licenses/` and listed in the r
 | Component | Use |
 | --- | --- |
 | `GlassLayers(overlay) { content }` | Stacks floating glass over content. `content` (on the theme background) is recorded as the backdrop; glass in `overlay` blurs and refracts it. |
-| `GlassSurface` | The base glass material. Over a backdrop it blurs (Android 12+) and refracts at the edges (Android 13+). Without one it draws a readable fallback fill. Nested inside another glass surface it draws a light inner layer. |
+| `GlassSurface` | The base glass material. Over a backdrop it blurs (Android 12+) and refracts at the edges (Android 13+). Without one it draws a readable fallback fill. Nested inside another glass surface it draws a light inner layer. Glass is flat: no gradient sheen on the surface, and the rim light is even all around. |
 | `GlassCard` | Rounded glass container for grouped content. Optional `onClick` adds press scale, ripple and button semantics. |
 | `GlassButton` | Capsule button with a label and optional icon. |
 | `GlassIconButton` | Circular icon-only button. `contentDescription` is required. |
