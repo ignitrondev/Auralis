@@ -50,6 +50,8 @@ system font. The licenses are in `src/main/assets/licenses/` and listed in the r
 | `GlassButton` | Capsule button with a label and optional icon. |
 | `GlassIconButton` | Circular icon-only button. `contentDescription` is required. |
 | `GlassNavigationBar` + `GlassNavigationBarItem` | Floating capsule navigation bar. Goes in the `GlassLayers` overlay. The selected tab sits on a `selection` pill with a heavier label (no color change). Items have the `Tab` role. |
+| `GlassMiniPlayer` | Floating capsule mini player: artwork, title, artist, play/pause, optional next, and a thin progress line. Stateless. `progress` is a lambda read only while drawing, so position updates do not recompose. Tapping the player opens Now Playing (`onClick`). |
+| `ArtworkFallback` | Neutral gradient for tracks without artwork. Never a colored placeholder. |
 | `LocalBottomChromePadding` | Bottom space covered by floating chrome (bar plus system inset). Scrolling screens add it to their bottom content padding so content scrolls under the glass but ends above it. |
 | `ScreenPlaceholder` | Temporary text-only body for screens that are not built yet. |
 
@@ -66,6 +68,12 @@ Backdrop blur and refraction come from [Haze](https://github.com/chrisbanes/haze
 includes the theme scrim so text stays readable over bright artwork, and below Android 12 the
 tint is close to opaque. Every glass surface has a hairline `borderSubtle` edge, which keeps it
 visible in the light theme.
+
+### Icons
+
+`AuralisIcons` is the only icon source. Most icons are Material rounded icons; `Pause` and
+`SkipNext` are drawn in the same rounded style because `material-icons-core` does not include
+them.
 
 ### Gallery (debug builds)
 

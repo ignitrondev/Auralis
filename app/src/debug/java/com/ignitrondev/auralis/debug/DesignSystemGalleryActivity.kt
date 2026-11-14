@@ -44,6 +44,7 @@ import com.ignitrondev.auralis.core.designsystem.component.GlassButton
 import com.ignitrondev.auralis.core.designsystem.component.GlassCard
 import com.ignitrondev.auralis.core.designsystem.component.GlassIconButton
 import com.ignitrondev.auralis.core.designsystem.component.GlassLayers
+import com.ignitrondev.auralis.core.designsystem.component.GlassMiniPlayer
 import com.ignitrondev.auralis.core.designsystem.icon.AuralisIcons
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
 import com.ignitrondev.auralis.core.designsystem.theme.ThemeMode
@@ -71,6 +72,7 @@ class DesignSystemGalleryActivity : ComponentActivity() {
 private fun Gallery(dark: Boolean, onToggleTheme: () -> Unit) {
     val colors = AuralisTheme.colors
     val spacing = AuralisTheme.spacing
+    var playing by rememberSaveable { mutableStateOf(false) }
     GlassLayers(
         modifier = Modifier
             .fillMaxSize()
@@ -83,6 +85,15 @@ private fun Gallery(dark: Boolean, onToggleTheme: () -> Unit) {
                     .padding(spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(spacing.md),
             ) {
+                GlassMiniPlayer(
+                    title = "Midnight City",
+                    artist = "M83",
+                    isPlaying = playing,
+                    progress = { 0.35f },
+                    onPlayPauseClick = { playing = !playing },
+                    onClick = {},
+                    onNextClick = {},
+                )
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Text("Glass over backdrop", style = AuralisTheme.typography.itemTitle)
                     Text(
@@ -113,7 +124,7 @@ private fun Gallery(dark: Boolean, onToggleTheme: () -> Unit) {
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 260.dp),
+            contentPadding = PaddingValues(bottom = 340.dp),
         ) {
             item { FakeArtwork(Modifier.fillMaxWidth().height(360.dp)) }
             item {
