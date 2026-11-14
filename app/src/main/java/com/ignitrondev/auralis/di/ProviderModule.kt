@@ -4,6 +4,7 @@
 package com.ignitrondev.auralis.di
 
 import android.content.Context
+import com.ignitrondev.auralis.provider.api.AccountSessionProvider
 import com.ignitrondev.auralis.provider.api.CatalogProvider
 import com.ignitrondev.auralis.provider.api.StreamProvider
 import com.ignitrondev.auralis.provider.botguard.WebViewAttestationProvider
@@ -32,4 +33,7 @@ object ProviderModule {
 
     @Provides
     fun provideStreamProvider(provider: YouTubeMusicProvider): StreamProvider = provider
+
+    @Provides
+    fun provideAccountSessionProvider(provider: YouTubeMusicProvider): AccountSessionProvider = provider
 }

@@ -9,7 +9,10 @@ import com.ignitrondev.auralis.domain.model.HomeFeed
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import com.ignitrondev.auralis.domain.repository.CatalogException
+import com.ignitrondev.auralis.provider.api.AccountSessionProvider
 import com.ignitrondev.auralis.provider.api.CatalogProvider
+import com.ignitrondev.auralis.provider.api.ProviderAccount
+import com.ignitrondev.auralis.provider.api.ProviderSession
 import com.ignitrondev.auralis.provider.api.PlayableStream
 import com.ignitrondev.auralis.provider.api.StreamException
 import com.ignitrondev.auralis.provider.api.StreamProvider
@@ -20,6 +23,11 @@ import com.ignitrondev.auralis.provider.youtube.parser.PlaylistParser
 import com.ignitrondev.auralis.provider.youtube.parser.SOURCE_ID
 import com.ignitrondev.auralis.provider.youtube.parser.SearchParser
 import com.ignitrondev.auralis.provider.youtube.parser.UnexpectedResponseException
+import com.ignitrondev.auralis.provider.youtube.parser.arr
+import com.ignitrondev.auralis.provider.youtube.parser.largestThumbnail
+import com.ignitrondev.auralis.provider.youtube.parser.obj
+import com.ignitrondev.auralis.provider.youtube.parser.path
+import com.ignitrondev.auralis.provider.youtube.parser.text
 import com.metrolist.innertubex.InnerTubeHttpException
 import com.metrolist.innertubex.InnerTubeLogger
 import com.metrolist.innertubex.bodyAsTextLimited
@@ -45,7 +53,7 @@ import java.io.IOException
  */
 class YouTubeMusicProvider internal constructor(
     private val session: InnerTubeSession,
-) : CatalogProvider, StreamProvider, AutoCloseable {
+) : CatalogProvider, StreamProvider, AccountSessionProvider, AutoCloseable {
 
     /**
      * @param attestation Mints BotGuard tokens for signed-out playback. Without it the catalog
@@ -146,6 +154,44 @@ class YouTubeMusicProvider internal constructor(
         } catch (error: IOException) {
             throw StreamException(StreamException.Reason.Network, "stream: network", error)
         }
+
+    override suspend fun applySession(session: ProviderSession?) {
+        val innerTube = this.session.innerTube
+        if (session == null) {
+            innerTube.replaceSession(cookie = null, visitorData = null, dataSyncId = null, authUser = "0", useLoginForBrowse = false)
+        } else {
+            innerTube.replaceSession(
+                cookie = session.cookie,
+                visitorData = session.visitorData,
+                // InnerTube expects only the account part of the data sync id ("<account>||").
+                dataSyncId = session.dataSyncId?.substringBefore("||")?.ifBlank { null },
+                authUser = session.authUser,
+                useLoginForBrowse = true,
+            )
+        }
+    }
+
+    /** Reads the active account from the account menu; null when signed out or the session expired. */
+    override suspend fun currentAccount(): ProviderAccount? {
+        if (!session.innerTube.hasSapCookieAuth()) return null
+        return try {
+            withContext(Dispatchers.Default) {
+                val root = session.innerTube.accountMenu(MUSIC_CLIENT).toJson("account")
+                val header = (root.arr("actions")?.firstOrNull() as? JsonObject)
+                    .path("openPopupAction", "popup", "multiPageMenuRenderer", "header", "activeAccountHeaderRenderer")
+                val name = header.obj("accountName").text() ?: return@withContext null
+                ProviderAccount(
+                    name = name,
+                    handle = header.obj("channelHandle").text(),
+                    avatarUrl = header.obj("accountPhoto").largestThumbnail(),
+                )
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            null
+        }
+    }
 
     override fun close() = session.close()
 

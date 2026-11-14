@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.ignitrondev.auralis.feature.settings"
 }
+
+dependencies {
+    implementation(projects.core.auth)
+}

@@ -28,16 +28,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.ignitrondev.auralis.core.designsystem.component.GlassButton
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
-import com.ignitrondev.auralis.provider.botguard.WebViewAttestationProvider
-import com.ignitrondev.auralis.provider.youtube.YouTubeMusicProvider
+import com.ignitrondev.auralis.domain.auth.AuthRepository
+import com.ignitrondev.auralis.domain.auth.AuthState
+import com.ignitrondev.auralis.provider.api.StreamProvider
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 
 /**
- * Debug-only playback diagnostics: BotGuard and stream resolution, with the integration's
- * warnings (which clients were refused and why). Shows statuses only; never tokens or stream URLs. Has its own launcher entry so it
+ * Debug-only playback diagnostics: account state and stream resolution through the app's own
+ * provider (so a signed-in session is used). Shows statuses only; never tokens or stream URLs. Has its own launcher entry so it
  * can be run on any network without adb.
  */
+@AndroidEntryPoint
 class PlaybackDiagnosticsActivity : ComponentActivity() {
+    @Inject lateinit var streams: StreamProvider
+
+    @Inject lateinit var auth: AuthRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -79,16 +87,14 @@ class PlaybackDiagnosticsActivity : ComponentActivity() {
 
     private suspend fun runDiagnostics(log: (String) -> Unit) {
         log("network: ${networkType()}")
-        val attestation = WebViewAttestationProvider(this)
-        val start = System.currentTimeMillis()
-        val token = attestation.mint("diagnostics")
-        log("botguard: ${if (token != null) "ok" else "failed"} (${System.currentTimeMillis() - start} ms)")
-        YouTubeMusicProvider(attestation) { warning, tag, message -> if (warning) log("$tag: $message") }.use { provider ->
-            val resolveStart = System.currentTimeMillis()
-            runCatching { provider.resolveStream(SAMPLE_VIDEO) }
-                .onSuccess { log("stream: OK ${it.mimeType} (${System.currentTimeMillis() - resolveStart} ms)") }
-                .onFailure { log("stream: FAILED ${it.message}") }
-        }
+        log("account: ${when (val state = auth.state.value) {
+            is AuthState.SignedIn -> "signed in"
+            else -> state::class.simpleName
+        }}")
+        val resolveStart = System.currentTimeMillis()
+        runCatching { streams.resolveStream(SAMPLE_VIDEO) }
+            .onSuccess { log("stream: OK ${it.mimeType} (${System.currentTimeMillis() - resolveStart} ms)") }
+            .onFailure { log("stream: FAILED ${it.message}") }
     }
 
     private fun networkType(): String = runCatching { activeNetworkType() }.getOrDefault("unknown")

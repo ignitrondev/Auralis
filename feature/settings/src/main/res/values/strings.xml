@@ -1,4 +1,13 @@
 <resources>
     <string name="feature_settings_title">Settings</string>
-    <string name="feature_settings_placeholder">Appearance, audio, account and diagnostics settings will appear here.</string>
+    <string name="feature_settings_account">Account</string>
+    <string name="feature_settings_checking_account">Checking your account…</string>
+    <string name="feature_settings_signed_out">Not signed in. Sign in to play music when YouTube asks for an account, and to see your library and liked music. Auralis never sees your password.</string>
+    <string name="feature_settings_session_expired">Your YouTube Music session ended. Sign in again to keep playing.</string>
+    <string name="feature_settings_sign_in">Sign in</string>
+    <string name="feature_settings_sign_in_again">Sign in again</string>
+    <string name="feature_settings_sign_out">Sign out</string>
+    <string name="feature_settings_signing_in">Checking your account…</string>
+    <string name="feature_settings_sign_in_failed">Couldn\'t confirm that account. Try signing in again.</string>
+    <string name="feature_settings_privacy">Your session is stored encrypted on this device only and is removed when you sign out.</string>
 </resources>

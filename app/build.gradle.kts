@@ -28,6 +28,7 @@ android {
 }
 
 dependencies {
+    implementation(projects.core.auth)
     implementation(projects.core.designsystem)
     implementation(projects.data)
     implementation(projects.provider.youtube)
