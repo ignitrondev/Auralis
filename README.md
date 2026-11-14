@@ -71,6 +71,16 @@ cd Auralis
 
 The debug APK is written to `app/build/outputs/apk/debug/`.
 
+Optional: signed-out playback uses YouTube's BotGuard, which needs YouTube's web client key at
+build time. It is never committed. Put it in `local.properties` (git-ignored):
+
+```properties
+auralis.youtubeWebApiKey=<key>
+```
+
+or set `AURALIS_YOUTUBE_WEB_API_KEY` in the environment (for CI). Without it, BotGuard is
+disabled and the app still plays music after you sign in.
+
 ## Privacy
 
 - No analytics and no third-party trackers.

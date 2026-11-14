@@ -22,7 +22,10 @@ class WebViewAttestationProvider(context: Context) : AttestationProvider {
     private var session: BotGuardSession? = null
 
     override suspend fun mint(identifier: String): String? =
-        try {
+        // Builds without the key skip attestation; signed-in playback does not need it.
+        if (!BotGuardProtocol.isConfigured) {
+            null
+        } else try {
             mintWithRetry(identifier)
         } catch (error: CancellationException) {
             throw error
