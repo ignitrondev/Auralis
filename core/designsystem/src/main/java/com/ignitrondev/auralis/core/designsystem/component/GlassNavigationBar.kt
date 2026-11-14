@@ -30,8 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -101,7 +99,7 @@ fun glassNavigationBarPadding(): Dp =
     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + glassNavigationBarHeight()
 
 /**
- * One destination in [GlassNavigationBar]. The selected item sits on a [selection] pill and uses
+ * One destination in [GlassNavigationBar]. The selected item sits on a small glass lens and uses
  * a heavier label; state is never shown by color (spec section 8.2.1).
  */
 @Composable
@@ -123,46 +121,45 @@ fun RowScope.GlassNavigationBarItem(
     )
     val contentColor = if (selected) colors.contentPrimary else colors.contentSecondary
 
-    Column(
+    Box(
         modifier = modifier
             .weight(1f)
             .fillMaxHeight()
-            .pressScale(interactionSource)
-            .clip(shape)
-            .drawBehind {
-                val alpha = pill.value
-                if (alpha > 0f) {
-                    drawRoundRect(
-                        color = colors.selection.copy(alpha = colors.selection.alpha * alpha),
-                        cornerRadius = CornerRadius(size.height / 2f),
-                    )
-                }
-            }
-            .selectable(
-                selected = selected,
-                interactionSource = interactionSource,
-                indication = ripple(color = colors.contentPrimary),
-                role = Role.Tab,
-                onClick = onClick,
-            )
-            .padding(horizontal = AuralisTheme.spacing.xs),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+            .pressScale(interactionSource),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(ItemIconSize),
-        )
-        Text(
-            text = label,
-            style = AuralisTheme.typography.labelSmall.copy(
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-            ),
-            color = contentColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (pill.value > 0f) {
+            GlassIndicator(alpha = { pill.value }, modifier = Modifier.matchParentSize(), shape = shape)
+        }
+        Column(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(shape)
+                .selectable(
+                    selected = selected,
+                    interactionSource = interactionSource,
+                    indication = ripple(color = colors.contentPrimary),
+                    role = Role.Tab,
+                    onClick = onClick,
+                )
+                .padding(horizontal = AuralisTheme.spacing.xs),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(ItemIconSize),
+            )
+            Text(
+                text = label,
+                style = AuralisTheme.typography.labelSmall.copy(
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                ),
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
