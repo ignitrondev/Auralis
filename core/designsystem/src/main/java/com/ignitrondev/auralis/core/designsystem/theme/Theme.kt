@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2026 IgnitronDev
  */
-package com.ignitrondev.auralis.ui.theme
+package com.ignitrondev.auralis.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
