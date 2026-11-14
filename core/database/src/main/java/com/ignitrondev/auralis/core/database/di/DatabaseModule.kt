@@ -6,6 +6,7 @@ package com.ignitrondev.auralis.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.ignitrondev.auralis.core.database.AuralisDatabase
+import com.ignitrondev.auralis.core.database.dao.PlaybackQueueDao
 import com.ignitrondev.auralis.core.database.dao.RecentSearchDao
 import dagger.Module
 import dagger.Provides
@@ -24,4 +25,7 @@ object DatabaseModule {
 
     @Provides
     fun provideRecentSearchDao(database: AuralisDatabase): RecentSearchDao = database.recentSearchDao()
+
+    @Provides
+    fun providePlaybackQueueDao(database: AuralisDatabase): PlaybackQueueDao = database.playbackQueueDao()
 }
