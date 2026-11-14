@@ -1,4 +1,17 @@
-# Auralis
+<p align="center">
+  <img src="docs/assets/auralis-app-icon.svg" alt="Auralis app icon" width="128" height="128">
+</p>
+
+<h1 align="center">Auralis</h1>
+
+<p align="center">
+  <a href="https://developer.android.com"><img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-0B0B0B?style=flat-square&logo=android&logoColor=white"></a>
+  <img alt="Min SDK 26" src="https://img.shields.io/badge/minSdk-26-0B0B0B?style=flat-square">
+  <a href="https://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4-0B0B0B?style=flat-square&logo=kotlin&logoColor=white"></a>
+  <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-0B0B0B?style=flat-square&logo=jetpackcompose&logoColor=white"></a>
+  <img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-0B0B0B?style=flat-square">
+  <img alt="Status: early development" src="https://img.shields.io/badge/status-early%20development-555555?style=flat-square">
+</p>
 
 Auralis is a native Android client for YouTube Music, built from scratch with Kotlin and Jetpack Compose. It pairs a native playback engine with a custom monochrome "Liquid Glass" interface.
 
