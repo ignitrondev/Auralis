@@ -39,3 +39,38 @@ stay neutral. Dynamic (wallpaper) color is never used.
 Both fonts are bundled variable fonts (`res/font`) under the SIL Open Font License. Downloadable
 Fonts are not used because they need Google Play Services. Non-Latin scripts fall back to the
 system font. The licenses are in `src/main/assets/licenses/` and listed in the root `NOTICE`.
+
+## Components
+
+| Component | Use |
+| --- | --- |
+| `GlassLayers(overlay) { content }` | Stacks floating glass over content. `content` (on the theme background) is recorded as the backdrop; glass in `overlay` blurs and refracts it. |
+| `GlassSurface` | The base glass material. Over a backdrop it blurs (Android 12+) and refracts at the edges (Android 13+). Without one it draws a readable fallback fill. Nested inside another glass surface it draws a light inner layer. |
+| `GlassCard` | Rounded glass container for grouped content. Optional `onClick` adds press scale, ripple and button semantics. |
+| `GlassButton` | Capsule button with a label and optional icon. |
+| `GlassIconButton` | Circular icon-only button. `contentDescription` is required. |
+| `ScreenPlaceholder` | Temporary text-only body for screens that are not built yet. |
+
+### Motion pattern
+
+`Modifier.pressScale(interactionSource)` is the shared press effect: the control scales to
+`AuralisTheme.motion.pressedScale` while pressed and springs back. The scale is applied in
+`graphicsLayer` (draw phase), so it never recomposes the content. Blur is never animated.
+
+### Glass rendering
+
+Glass rendering comes from [Backdrop](https://github.com/Kyant0/AndroidLiquidGlass) by Kyant0
+(Apache-2.0): the backdrop is blurred on Android 12+ and refracted through a lens at the edges
+on Android 13+, with a specular rim and a soft shadow. Backdrop types never leave this module,
+so the library can be replaced. The glass tint includes the theme scrim so text stays readable
+over bright artwork, and below Android 12 the tint is close to opaque. Every glass surface has a
+hairline `borderSubtle` edge, which keeps it visible in the light theme.
+
+### Gallery (debug builds)
+
+```bash
+adb shell am start -n com.ignitrondev.auralis/.debug.DesignSystemGalleryActivity
+```
+
+It shows the type scale, color tokens and every glass component over artwork-like content,
+with a button that switches between the dark and light themes.

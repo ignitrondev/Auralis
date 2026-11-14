@@ -27,6 +27,7 @@ used under its own license; their copyright and license notices are kept.
   Kotlin standard library                     Apache License 2.0
   kotlinx.serialization                       Apache License 2.0
   Dagger / Hilt                               Apache License 2.0
+  Backdrop and Shapes (Kyant0)                Apache License 2.0
   Inter typeface                              SIL Open Font License 1.1
     Copyright 2020 The Inter Project Authors
     (https://github.com/rsms/inter)
