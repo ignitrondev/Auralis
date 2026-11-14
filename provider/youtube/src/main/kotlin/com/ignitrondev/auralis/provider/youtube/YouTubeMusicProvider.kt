@@ -7,6 +7,7 @@ import com.ignitrondev.auralis.domain.model.AlbumDetail
 import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.HomeFeed
 import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import com.ignitrondev.auralis.domain.repository.CatalogException
@@ -22,6 +23,7 @@ import com.ignitrondev.auralis.provider.youtube.parser.AlbumParser
 import com.ignitrondev.auralis.provider.youtube.parser.ArtistParser
 import com.ignitrondev.auralis.provider.youtube.parser.FeedParser
 import com.ignitrondev.auralis.provider.youtube.parser.HistoryParser
+import com.ignitrondev.auralis.provider.youtube.parser.LibraryAlbumsParser
 import com.ignitrondev.auralis.provider.youtube.parser.PlaylistParser
 import com.ignitrondev.auralis.provider.youtube.parser.SOURCE_ID
 import com.ignitrondev.auralis.provider.youtube.parser.SearchParser
@@ -117,22 +119,34 @@ class YouTubeMusicProvider internal constructor(
 
     /** The account's listening history, as YouTube Music records it for this account on any device. */
     override suspend fun history(): ListeningHistory = request("history") {
+        HistoryParser.parse(accountBrowse("history", HISTORY_BROWSE_ID))
+    }
+
+    override suspend fun savedAlbums(): List<MusicAlbum> = request("saved albums") {
+        LibraryAlbumsParser.parse(accountBrowse("saved albums", SAVED_ALBUMS_BROWSE_ID))
+    }
+
+    /**
+     * Browses a page that belongs to the account. Refuses early when signed out, so no request is
+     * sent without a session; a rejected session (401 or 403, as a response or an exception) is
+     * reported as [CatalogException.Reason.SignInRequired].
+     */
+    private suspend fun accountBrowse(operation: String, browseId: String): JsonObject {
         if (!session.innerTube.hasSapCookieAuth()) {
-            throw CatalogException(CatalogException.Reason.SignInRequired, "history: signed out")
+            throw CatalogException(CatalogException.Reason.SignInRequired, "$operation: signed out")
         }
-        // A rejected session comes back as 401 or 403, either as a response or as an exception.
         val response = try {
-            session.innerTube.browse(MUSIC_CLIENT, browseId = HISTORY_BROWSE_ID)
+            session.innerTube.browse(MUSIC_CLIENT, browseId = browseId)
         } catch (error: InnerTubeHttpException) {
             if (error.status.value in SESSION_REJECTED) {
-                throw CatalogException(CatalogException.Reason.SignInRequired, "history: HTTP ${error.status.value}", error)
+                throw CatalogException(CatalogException.Reason.SignInRequired, "$operation: HTTP ${error.status.value}", error)
             }
             throw error
         }
         if (response.status.value in SESSION_REJECTED) {
-            throw CatalogException(CatalogException.Reason.SignInRequired, "history: HTTP ${response.status.value}")
+            throw CatalogException(CatalogException.Reason.SignInRequired, "$operation: HTTP ${response.status.value}")
         }
-        HistoryParser.parse(response.toJson("history"))
+        return response.toJson(operation)
     }
 
     /**
@@ -259,6 +273,7 @@ class YouTubeMusicProvider internal constructor(
         const val HOME_BROWSE_ID = "FEmusic_home"
         const val EXPLORE_BROWSE_ID = "FEmusic_explore"
         const val HISTORY_BROWSE_ID = "FEmusic_history"
+        const val SAVED_ALBUMS_BROWSE_ID = "FEmusic_liked_albums"
         val SESSION_REJECTED = setOf(401, 403)
     }
 }

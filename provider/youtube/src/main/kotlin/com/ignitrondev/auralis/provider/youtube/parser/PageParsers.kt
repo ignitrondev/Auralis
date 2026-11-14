@@ -195,7 +195,8 @@ internal object PlaylistParser {
         val shelf = columns.path("secondaryContents", "sectionListRenderer").arr("contents").objects()
             .firstNotNullOfOrNull { it.renderer("musicPlaylistShelfRenderer") }
         val items = shelf?.arr("contents").objects()
-        val tracks = items.mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem() as? MusicTrack }
+        // Playlist rows have no type prefix: an uploader without a link is the first group.
+        val tracks = items.mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem(unlinkedArtistGroup = 0) as? MusicTrack }
         val playlist = MusicPlaylist(
             id = id,
             sourceId = SOURCE_ID,
@@ -231,5 +232,25 @@ internal object HistoryParser {
             tracks.takeIf { it.isNotEmpty() }?.let { HistorySection(shelf.obj("title").text(), it) }
         }
         return ListeningHistory(sections)
+    }
+}
+
+/**
+ * Albums saved to the account's library (`FEmusic_liked_albums`): a `gridRenderer` of album cards,
+ * either directly in the section list or inside an `itemSectionRenderer`.
+ */
+internal object LibraryAlbumsParser {
+    fun parse(root: JsonObject): List<MusicAlbum> {
+        if (root.path("contents", "singleColumnBrowseResultsRenderer") == null) {
+            throw UnexpectedResponseException("saved albums: no singleColumnBrowseResultsRenderer")
+        }
+        val sections = root.sectionListContents("contents", "singleColumnBrowseResultsRenderer")
+        val grids = sections.flatMap { section ->
+            listOfNotNull(section.renderer("gridRenderer")) +
+                section.renderer("itemSectionRenderer")?.arr("contents").objects().mapNotNull { it.renderer("gridRenderer") }
+        }
+        return grids.flatMap { grid -> grid.arr("items").objects() }
+            .mapNotNull { it.renderer("musicTwoRowItemRenderer")?.twoRowItem() as? MusicAlbum }
+            .distinctBy { it.id }
     }
 }

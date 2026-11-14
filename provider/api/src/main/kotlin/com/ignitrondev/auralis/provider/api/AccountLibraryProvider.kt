@@ -4,6 +4,7 @@
 package com.ignitrondev.auralis.provider.api
 
 import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.MusicAlbum
 
 /**
  * The signed-in account's library on a provider (spec section 12.2). Read only. Calls fail with
@@ -12,4 +13,6 @@ import com.ignitrondev.auralis.domain.model.ListeningHistory
  */
 interface AccountLibraryProvider {
     suspend fun history(): ListeningHistory
+
+    suspend fun savedAlbums(): List<MusicAlbum>
 }

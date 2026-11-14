@@ -8,6 +8,7 @@ import com.ignitrondev.auralis.domain.auth.AuthRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.domain.model.HistorySection
 import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.repository.CatalogException
 import com.ignitrondev.auralis.domain.repository.LibraryRepository
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,11 @@ class LibraryViewModelTest {
     private class FakeLibrary : LibraryRepository {
         var calls = 0
         var failNext = false
+        var albumsFailure: CatalogException.Reason? = null
+        override suspend fun savedAlbums(): List<MusicAlbum> {
+            albumsFailure?.let { throw CatalogException(it, "albums") }
+            return listOf(MusicAlbum("MPRE1", "youtube", "Manusia", emptyList(), "2022", null))
+        }
         override suspend fun history(): ListeningHistory {
             calls++
             if (failNext) {
@@ -70,7 +76,7 @@ class LibraryViewModelTest {
 
         auth.state.value = AuthState.SignedIn("Listener", null, null)
         advanceUntilIdle()
-        assertEquals("Today", (viewModel.state.value as CatalogUiState.Content).data.sections.single().title)
+        assertEquals("Today", (viewModel.state.value as CatalogUiState.Content).data.history.sections.single().title)
         assertEquals(1, library.calls)
 
         auth.state.value = AuthState.SessionExpired
@@ -92,5 +98,23 @@ class LibraryViewModelTest {
         advanceUntilIdle()
         assertEquals(2, library.calls)
         assertEquals(CatalogUiState.Content::class, viewModel.state.value::class)
+    }
+
+    @Test
+    fun albumsThatFailToLoadAreLeftOutButARejectedSessionIsNot() = runTest(dispatcher) {
+        val auth = FakeAuth().apply { state.value = AuthState.SignedIn("Listener", null, null) }
+        val library = FakeLibrary().apply { albumsFailure = CatalogException.Reason.Network }
+        val viewModel = LibraryViewModel(auth, library)
+        backgroundScope.launch { viewModel.state.collect {} }
+
+        advanceUntilIdle()
+        val content = (viewModel.state.value as CatalogUiState.Content).data
+        assertEquals(emptyList<MusicAlbum>(), content.albums)
+        assertEquals("Today", content.history.sections.single().title)
+
+        library.albumsFailure = CatalogException.Reason.SignInRequired
+        viewModel.retry()
+        advanceUntilIdle()
+        assertEquals(CatalogUiState.Error(CatalogException.Reason.SignInRequired), viewModel.state.value)
     }
 }
