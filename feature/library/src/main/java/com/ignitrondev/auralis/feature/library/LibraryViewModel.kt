@@ -70,7 +70,7 @@ class LibraryViewModel @Inject constructor(
     private suspend fun loadContent(): LibraryContent = coroutineScope {
         val albums = async {
             try {
-                library.savedAlbums()
+                library.savedAlbums().items
             } catch (error: CatalogException) {
                 if (error.reason == CatalogException.Reason.SignInRequired) throw error
                 emptyList()

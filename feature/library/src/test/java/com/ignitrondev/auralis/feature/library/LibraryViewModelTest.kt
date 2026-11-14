@@ -9,6 +9,7 @@ import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.domain.model.HistorySection
 import com.ignitrondev.auralis.domain.model.ListeningHistory
 import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.repository.CatalogException
 import com.ignitrondev.auralis.domain.repository.LibraryRepository
 import kotlinx.coroutines.Dispatchers
@@ -38,9 +39,9 @@ class LibraryViewModelTest {
         var calls = 0
         var failNext = false
         var albumsFailure: CatalogException.Reason? = null
-        override suspend fun savedAlbums(): List<MusicAlbum> {
+        override suspend fun savedAlbums(pageToken: String?): Page<MusicAlbum> {
             albumsFailure?.let { throw CatalogException(it, "albums") }
-            return listOf(MusicAlbum("MPRE1", "youtube", "Manusia", emptyList(), "2022", null))
+            return Page(listOf(MusicAlbum("MPRE1", "youtube", "Manusia", emptyList(), "2022", null)), nextPageToken = null)
         }
         override suspend fun isTrackLiked(trackId: String) = error("unused")
         override suspend fun setTrackLiked(trackId: String, liked: Boolean) = error("unused")

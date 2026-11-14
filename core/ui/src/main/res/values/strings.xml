@@ -10,5 +10,6 @@
     <string name="core_ui_type_artist">Artist</string>
     <string name="core_ui_type_playlist">Playlist</string>
     <string name="core_ui_back">Back</string>
+    <string name="core_ui_see_all">See all</string>
     <string name="core_ui_explicit">Explicit</string>
 </resources>

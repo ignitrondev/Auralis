@@ -50,11 +50,19 @@ import com.ignitrondev.auralis.domain.repository.LibraryRepository
 fun LibraryDestination(
     actions: CatalogActions,
     onSignIn: () -> Unit,
+    onOpenSavedAlbums: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LibraryScreen(state = state, actions = actions, onSignIn = onSignIn, onRetry = viewModel::retry, modifier = modifier)
+    LibraryScreen(
+        state = state,
+        actions = actions,
+        onSignIn = onSignIn,
+        onRetry = viewModel::retry,
+        onOpenSavedAlbums = onOpenSavedAlbums,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -63,6 +71,7 @@ fun LibraryScreen(
     actions: CatalogActions,
     onSignIn: () -> Unit,
     onRetry: () -> Unit,
+    onOpenSavedAlbums: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -84,13 +93,13 @@ fun LibraryScreen(
             } else {
                 ErrorState(state.reason, onRetry)
             }
-            is CatalogUiState.Content -> LibraryContentList(content = state.data, actions = actions)
+            is CatalogUiState.Content -> LibraryContentList(content = state.data, actions = actions, onOpenSavedAlbums = onOpenSavedAlbums)
         }
     }
 }
 
 @Composable
-private fun LibraryContentList(content: LibraryContent, actions: CatalogActions) {
+private fun LibraryContentList(content: LibraryContent, actions: CatalogActions, onOpenSavedAlbums: () -> Unit) {
     val spacing = AuralisTheme.spacing
     val likedMusic = MusicPlaylist(
         id = LibraryRepository.LIKED_MUSIC_PLAYLIST_ID,
@@ -118,6 +127,7 @@ private fun LibraryContentList(content: LibraryContent, actions: CatalogActions)
                     section = CatalogSection(albumsTitle, content.albums),
                     actions = actions,
                     modifier = Modifier.padding(top = spacing.xl),
+                    onSeeAll = onOpenSavedAlbums,
                 )
             }
         }
@@ -179,6 +189,7 @@ private fun LibraryScreenPreview() {
             actions = CatalogActions.None,
             onSignIn = {},
             onRetry = {},
+            onOpenSavedAlbums = {},
         )
     }
 }

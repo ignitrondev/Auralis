@@ -14,6 +14,7 @@ import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.MusicArtist
 import com.ignitrondev.auralis.domain.model.MusicPlaylist
 import com.ignitrondev.auralis.domain.model.MusicTrack
+import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import kotlinx.serialization.json.JsonArray
@@ -242,22 +243,34 @@ internal object HistoryParser {
 }
 
 /**
- * Albums saved to the account's library (`FEmusic_liked_albums`): a `gridRenderer` of album cards,
- * either directly in the section list or inside an `itemSectionRenderer`.
+ * Albums saved to the account's library (`FEmusic_liked_albums`), one page at a time.
+ * - First page: a `gridRenderer` of album cards, directly in the section list or inside an
+ *   `itemSectionRenderer`.
+ * - Next pages: `continuationContents.gridContinuation`, or (newer responses)
+ *   `onResponseReceivedActions[].appendContinuationItemsAction.continuationItems`.
+ * The token for the next page is a `nextContinuationData.continuation` or a
+ * `continuationItemRenderer`'s `continuationCommand.token`.
  */
 internal object LibraryAlbumsParser {
-    fun parse(root: JsonObject): List<MusicAlbum> {
-        if (root.path("contents", "singleColumnBrowseResultsRenderer") == null) {
-            throw UnexpectedResponseException("saved albums: no singleColumnBrowseResultsRenderer")
+    fun parse(root: JsonObject): Page<MusicAlbum> {
+        val containers: List<JsonObject> = when {
+            root.path("contents", "singleColumnBrowseResultsRenderer") != null ->
+                root.sectionListContents("contents", "singleColumnBrowseResultsRenderer").flatMap { section ->
+                    listOfNotNull(section.renderer("gridRenderer")) +
+                        section.renderer("itemSectionRenderer")?.arr("contents").objects().mapNotNull { it.renderer("gridRenderer") }
+                }
+            root.obj("continuationContents") != null -> listOfNotNull(root.obj("continuationContents"))
+            root.arr("onResponseReceivedActions") != null -> root.arr("onResponseReceivedActions").objects()
+            else -> throw UnexpectedResponseException("saved albums: no grid or continuation")
         }
-        val sections = root.sectionListContents("contents", "singleColumnBrowseResultsRenderer")
-        val grids = sections.flatMap { section ->
-            listOfNotNull(section.renderer("gridRenderer")) +
-                section.renderer("itemSectionRenderer")?.arr("contents").objects().mapNotNull { it.renderer("gridRenderer") }
-        }
-        return grids.flatMap { grid -> grid.arr("items").objects() }
-            .mapNotNull { it.renderer("musicTwoRowItemRenderer")?.twoRowItem() as? MusicAlbum }
+        val albums = containers.flatMap { it.findObjects("musicTwoRowItemRenderer") }
+            .mapNotNull { it.twoRowItem() as? MusicAlbum }
             .distinctBy { it.id }
+        val token = containers.firstNotNullOfOrNull { container ->
+            container.findObjects("nextContinuationData").firstNotNullOfOrNull { it.str("continuation") }
+                ?: container.findObjects("continuationCommand").firstNotNullOfOrNull { it.str("token") }
+        }
+        return Page(albums, token)
     }
 }
 

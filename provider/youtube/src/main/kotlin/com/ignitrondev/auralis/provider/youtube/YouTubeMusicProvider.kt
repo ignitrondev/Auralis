@@ -8,6 +8,7 @@ import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.HomeFeed
 import com.ignitrondev.auralis.domain.model.ListeningHistory
 import com.ignitrondev.auralis.domain.model.MusicAlbum
+import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import com.ignitrondev.auralis.domain.repository.CatalogException
@@ -123,8 +124,8 @@ class YouTubeMusicProvider internal constructor(
         HistoryParser.parse(accountBrowse("history", HISTORY_BROWSE_ID))
     }
 
-    override suspend fun savedAlbums(): List<MusicAlbum> = request("saved albums") {
-        LibraryAlbumsParser.parse(accountBrowse("saved albums", SAVED_ALBUMS_BROWSE_ID))
+    override suspend fun savedAlbums(pageToken: String?): Page<MusicAlbum> = request("saved albums") {
+        LibraryAlbumsParser.parse(accountBrowse("saved albums", SAVED_ALBUMS_BROWSE_ID, continuation = pageToken))
     }
 
     override suspend fun isTrackLiked(trackId: String): Boolean = request("like status") {
@@ -187,9 +188,16 @@ class YouTubeMusicProvider internal constructor(
      * sent without a session; a rejected session (401 or 403, as a response or an exception) is
      * reported as [CatalogException.Reason.SignInRequired].
      */
-    private suspend fun accountBrowse(operation: String, browseId: String): JsonObject {
+    private suspend fun accountBrowse(operation: String, browseId: String, continuation: String? = null): JsonObject {
         requireSession(operation)
-        val response = rejectedSessionAware(operation) { session.innerTube.browse(MUSIC_CLIENT, browseId = browseId) }
+        val response = rejectedSessionAware(operation) {
+            // A continuation names the page by itself; the browse ID is only for the first page.
+            if (continuation == null) {
+                session.innerTube.browse(MUSIC_CLIENT, browseId = browseId)
+            } else {
+                session.innerTube.browse(MUSIC_CLIENT, browseId = null, continuation = continuation)
+            }
+        }
         return response.toJson(operation)
     }
 

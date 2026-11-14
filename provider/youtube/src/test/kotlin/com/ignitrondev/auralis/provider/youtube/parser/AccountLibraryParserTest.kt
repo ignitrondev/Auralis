@@ -8,6 +8,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -50,7 +51,9 @@ class AccountLibraryParserTest {
 
     @Test
     fun savedAlbumsComeFromTheGridAndOnlyAlbumsAreKept(): Unit {
-        val albums = LibraryAlbumsParser.parse(fixture("saved_albums_synthetic"))
+        val page = LibraryAlbumsParser.parse(fixture("saved_albums_synthetic"))
+        val albums = page.items
+        assertEquals("PAGE2TOKEN", page.nextPageToken)
 
         assertEquals(listOf("MPREalbum001", "MPREalbum002"), albums.map { it.id })
         val manusia = albums[0]
@@ -106,6 +109,38 @@ class AccountLibraryParserTest {
     @Test(expected = UnexpectedResponseException::class)
     fun aViewModelForAnotherTrackIsNotUsed() {
         LikeStatusParser.isLiked("song00000A1", viewModelResponse("otherTrack1", "LIKE", updatedStatus = null))
+    }
+
+    private fun albumCard(id: String) =
+        """{"musicTwoRowItemRenderer": {"title": {"runs": [{"text": "Album $id"}]},
+           "navigationEndpoint": {"browseEndpoint": {"browseId": "$id", "browseEndpointContextSupportedConfigs": {"browseEndpointContextMusicConfig": {"pageType": "MUSIC_PAGE_TYPE_ALBUM"}}}}}}"""
+
+    @Test
+    fun savedAlbumsContinueInTheOlderGridContinuationShape(): Unit {
+        val root = InnerTubeSession.json.parseToJsonElement(
+            """{"continuationContents": {"gridContinuation": {
+                 "items": [${albumCard("MPREalbum003")}, ${albumCard("MPREalbum004")}],
+                 "continuations": [{"nextContinuationData": {"continuation": "PAGE3TOKEN"}}]}}}""",
+        ).jsonObject
+        val page = LibraryAlbumsParser.parse(root)
+        assertEquals(listOf("MPREalbum003", "MPREalbum004"), page.items.map { it.id })
+        assertEquals("PAGE3TOKEN", page.nextPageToken)
+    }
+
+    @Test
+    fun savedAlbumsContinueInTheAppendActionShapeAndTheLastPageHasNoToken(): Unit {
+        val withToken = InnerTubeSession.json.parseToJsonElement(
+            """{"onResponseReceivedActions": [{"appendContinuationItemsAction": {"continuationItems": [
+                 ${albumCard("MPREalbum005")},
+                 {"continuationItemRenderer": {"continuationEndpoint": {"continuationCommand": {"token": "PAGE4TOKEN"}}}}]}}]}""",
+        ).jsonObject
+        assertEquals(listOf("MPREalbum005"), LibraryAlbumsParser.parse(withToken).items.map { it.id })
+        assertEquals("PAGE4TOKEN", LibraryAlbumsParser.parse(withToken).nextPageToken)
+
+        val last = InnerTubeSession.json.parseToJsonElement(
+            """{"onResponseReceivedActions": [{"appendContinuationItemsAction": {"continuationItems": [${albumCard("MPREalbum006")}]}}]}""",
+        ).jsonObject
+        assertNull(LibraryAlbumsParser.parse(last).nextPageToken)
     }
 
     @Test(expected = UnexpectedResponseException::class)
