@@ -39,5 +39,9 @@ gradlePlugin {
             id = libs.plugins.auralis.android.feature.get().pluginId
             implementationClass = "AndroidFeatureConventionPlugin"
         }
+        register("hilt") {
+            id = libs.plugins.auralis.hilt.get().pluginId
+            implementationClass = "HiltConventionPlugin"
+        }
     }
 }
