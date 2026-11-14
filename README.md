@@ -1,105 +1,77 @@
 <p align="center">
-  <img src="docs/assets/auralis-app-icon.svg" alt="Auralis app icon" width="128" height="128">
+  <img src="docs/assets/auralis-app-icon.svg" alt="Auralis app icon" width="112" height="112">
 </p>
 
 <h1 align="center">Auralis</h1>
 
+<p align="center"><strong>YouTube Music, with a native Android feel.</strong></p>
+
 <p align="center">
-  <a href="https://developer.android.com"><img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-0B0B0B?style=flat-square&logo=android&logoColor=white"></a>
-  <img alt="Min SDK 26" src="https://img.shields.io/badge/minSdk-26-0B0B0B?style=flat-square">
-  <a href="https://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4-0B0B0B?style=flat-square&logo=kotlin&logoColor=white"></a>
-  <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-0B0B0B?style=flat-square&logo=jetpackcompose&logoColor=white"></a>
-  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-0B0B0B?style=flat-square"></a>
-  <img alt="Status: early development" src="https://img.shields.io/badge/status-early%20development-555555?style=flat-square">
+  <a href="https://github.com/ignitrondev/Auralis/releases/download/v2.0.0-beta.2/Auralis-v2.0.0-beta.2.apk"><strong>Download beta APK</strong></a>
+  ·
+  <a href="https://github.com/ignitrondev/Auralis/releases/tag/v2.0.0-beta.2">Release details</a>
+  ·
+  <a href="https://github.com/ignitrondev/Auralis/issues/new/choose">Send feedback</a>
 </p>
 
-Auralis is a native Android client for YouTube Music, built from scratch with Kotlin and Jetpack Compose. It pairs a native playback engine with a custom monochrome "Liquid Glass" interface.
+<p align="center">
+  <a href="https://developer.android.com"><img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white"></a>
+  <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white"></a>
+  <a href="LICENSE"><img alt="GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-555555?style=flat-square"></a>
+</p>
 
-> **Status: early development.** The project is at the start of Phase 1 (foundation). It cannot play music yet, and there is no Auralis release.
+Auralis is an independent YouTube Music client for Android. Explore music, search for songs and
+artists, and listen through a native player wrapped in a calm, monochrome **Liquid Glass** interface.
 
-> **Disclaimer:** Auralis is an unofficial, independent project. It is not affiliated with, endorsed by, or sponsored by YouTube or Google. It does not modify or redistribute the official YouTube Music app.
+> **Beta · v2.0.0-beta.2.** Try it out and tell us what works well and what needs attention. Auralis
+> is still in active development, so you may run into bugs.
 
-## Planned features
+## The app
 
-The first release (MVP) will include:
+- **Home** — a place to discover music.
+- **Search** — find songs, albums, artists, and playlists.
+- **Library** — browse albums, recently played music, and liked tracks after signing in.
+- **Player** — keep music playing in the background, control playback from the notification, and
+  manage the queue.
+- **Settings** — sign in or out and check for new releases.
 
-- YouTube Music home feed, search, and browse/detail pages
-- Audio streaming with background playback
-- Media notification and lock-screen controls
-- Queue management and playback state restore
-- Library, liked music, and playlists (after the sign-in flow is verified)
-- Works signed out; no Google Play Services required
-- Liquid Glass design system with dark and light themes
+The interface uses Auralis's monochrome Liquid Glass design across its Home, Search, Library, and
+Settings screens, with a compact player that stays close while you browse.
 
-These features are not built yet. See [Roadmap](#roadmap) for progress.
+## Download and install
 
-## Tech stack
+Get the [Auralis v2.0.0-beta.2 APK](https://github.com/ignitrondev/Auralis/releases/download/v2.0.0-beta.2/Auralis-v2.0.0-beta.2.apk)
+for Android 8.0 or newer. When prompted, allow your browser or file manager to install apps from this
+source.
 
-| Layer | Technology |
-| --- | --- |
-| Language | Kotlin |
-| UI | Jetpack Compose, Material 3 + custom Liquid Glass |
-| Playback | AndroidX Media3 / ExoPlayer, MediaSessionService |
-| Async | Kotlin Coroutines, Flow |
-| DI | Hilt |
-| Storage | Room, DataStore |
-| Networking | Ktor Client, Kotlinx Serialization |
-| YouTube Music | InnerTube via [InnerTubeX](https://github.com/MetrolistGroup/innertubex) (pending evaluation) |
-| Build | Gradle Kotlin DSL with version catalog |
+If you have a **debug build of Auralis** installed, remove it before installing this release. Android
+does not allow a release APK to update a debug build because they use different signing keys.
+Removing the debug build also removes its local app data. Future release APKs will update normally.
 
-## Roadmap
+## Help test the beta
 
-- [ ] **Phase 1: Foundation.** Project setup, modules, DI, navigation, domain models.
-- [ ] **Phase 2: Design system.** Theme, glass components, motion.
-- [ ] **Phase 3: YouTube Music integration.** InnerTube client, home, search, detail pages.
-- [ ] **Phase 4: Playback.** ExoPlayer, background service, queue, notification controls.
-- [ ] **Phase 5: Product experience.** Now Playing, playlists, account library, settings.
-- [ ] **Phase 6: Stabilization.** Tests, performance, and the first release APK.
-
-## Building from source
-
-Requirements:
-
-- JDK 17 or newer
-- Android SDK with platform 37 installed
-
-```bash
-git clone git@github.com:ignitrondev/Auralis.git
-cd Auralis
-./gradlew assembleDebug
-```
-
-The debug APK is written to `app/build/outputs/apk/debug/`.
-
-Release tags build and publish signed APKs through GitHub Actions. See [Releasing Auralis](docs/releasing.md) for the one-time signing setup and how to build an existing tag.
-
-Optional: signed-out playback uses YouTube's BotGuard, which needs YouTube's web client key at
-build time. It is never committed. Put it in `local.properties` (git-ignored):
-
-```properties
-auralis.youtubeWebApiKey=<key>
-```
-
-or set `AURALIS_YOUTUBE_WEB_API_KEY` in the environment (for CI). Without it, BotGuard is
-disabled and the app still plays music after you sign in.
+Try browsing, searching, signing in, playing music in the background, and using the queue. If you find
+a problem, [open an issue](https://github.com/ignitrondev/Auralis/issues/new/choose) with your phone
+model, Android version, and the steps that led to it. Please leave out account details and private
+session information.
 
 ## Privacy
 
-- No analytics and no third-party trackers.
-- The app only sends requests to YouTube Music and its media hosts.
-- Auralis never asks for or stores your Google password. Session data stays in encrypted storage on your device.
+Auralis connects to YouTube Music and its media hosts. It does not ask for or store your Google
+password. Your session is stored encrypted on your device and removed when you sign out. Auralis has
+no analytics or third-party trackers. See the [security policy](SECURITY.md) to report a security
+issue.
 
-## Previous project: IgniteTunes
+## About the project
 
-This repository used to host IgniteTunes, a Flutter app. Auralis replaces it with a native rewrite. The old IgniteTunes builds (v1.0.0, v1.1.0) are still on the [Releases](https://github.com/ignitrondev/Auralis/releases) page, but they are no longer maintained.
+Auralis is an unofficial, independent project and is not affiliated with YouTube or Google. This
+repository previously hosted **IgniteTunes**, a Flutter app; Auralis is its native rebrand and
+rewrite. The old [IgniteTunes releases](https://github.com/ignitrondev/Auralis/releases) remain
+available and are not maintained.
 
-## License
-
-Auralis is licensed under the [GNU General Public License v3.0](LICENSE) (GPL-3.0). Third-party components and their licenses are listed in [NOTICE](NOTICE).
-
-## Name and logo
-
-The name **Auralis**, the name **IgnitronDev**, and the Auralis logo are brand assets of IgnitronDev. They are not covered by the source code license. Forks are welcome under the terms of the license, but they must not use the Auralis name or logo in a way that makes them look like the official app.
+Auralis is licensed under the [GNU General Public License v3.0](LICENSE). Third-party licenses are
+listed in [NOTICE](NOTICE). The Auralis and IgnitronDev names and logo are brand assets and are not
+covered by the source code license.
 
 ---
 
