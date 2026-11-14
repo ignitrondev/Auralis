@@ -19,4 +19,5 @@
     <string name="feature_settings_update_failed">Couldn\'t check for updates. Check your connection and try again.</string>
     <string name="feature_settings_download_update">Download update</string>
     <string name="feature_settings_release_notes">What\'s new</string>
+    <string name="feature_settings_update_auto_check">Auralis checks GitHub for a new version when it opens, at most twice a day. Nothing about you is sent.</string>
 </resources>

@@ -5,4 +5,5 @@
     <string name="playback_error_unavailable">This track can\'t be played.</string>
     <string name="playback_error_unknown">Playback stopped. Tap to try again.</string>
     <string name="mini_player_stop">Stop playback</string>
+    <string name="settings_update_badge">Update %1$s available</string>
 </resources>

@@ -3,6 +3,8 @@
  */
 package com.ignitrondev.auralis.domain.update
 
+import kotlinx.coroutines.flow.StateFlow
+
 /** The installed app, as the update check needs it. */
 data class AppInfo(val versionName: String)
 
@@ -17,6 +19,24 @@ data class AppRelease(
     val pageUrl: String,
     val apkUrl: String?,
 )
+
+/**
+ * Keeps track of whether a newer Auralis is available, for the update dot on the Settings tab and
+ * the update card in Settings.
+ */
+interface AppUpdates {
+    /**
+     * The newest update found, or null. It starts from the last result saved on the device, so the
+     * dot survives a restart while offline, and it is dropped once that version is installed.
+     */
+    val available: StateFlow<AppRelease?>
+
+    /** Checks now, for the Settings button. Returns the update, or null when up to date. Throws when the check fails. */
+    suspend fun checkNow(): AppRelease?
+
+    /** Checks only when the last check is old enough. Failures are ignored: it runs in the background. */
+    suspend fun checkIfDue()
+}
 
 /** Where Auralis releases are published. Calls fail with an exception when they cannot be read. */
 interface AppReleaseRepository {

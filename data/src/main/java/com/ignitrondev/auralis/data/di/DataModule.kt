@@ -3,6 +3,7 @@
  */
 package com.ignitrondev.auralis.data.di
 
+import com.ignitrondev.auralis.data.repository.DefaultAppUpdates
 import com.ignitrondev.auralis.data.repository.DefaultCatalogRepository
 import com.ignitrondev.auralis.data.repository.DefaultLibraryRepository
 import com.ignitrondev.auralis.data.repository.GitHubReleaseRepository
@@ -13,6 +14,7 @@ import com.ignitrondev.auralis.domain.repository.LibraryRepository
 import com.ignitrondev.auralis.domain.repository.PlaybackSnapshotRepository
 import com.ignitrondev.auralis.domain.repository.SearchHistoryRepository
 import com.ignitrondev.auralis.domain.update.AppReleaseRepository
+import com.ignitrondev.auralis.domain.update.AppUpdates
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -35,4 +37,7 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindAppReleaseRepository(impl: GitHubReleaseRepository): AppReleaseRepository
+
+    @Binds
+    abstract fun bindAppUpdates(impl: DefaultAppUpdates): AppUpdates
 }
