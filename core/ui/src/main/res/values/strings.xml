@@ -2,6 +2,7 @@
     <string name="core_ui_retry">Try again</string>
     <string name="core_ui_error_network">Can\'t reach YouTube Music. Check your connection.</string>
     <string name="core_ui_error_not_found">This page isn\'t available.</string>
+    <string name="core_ui_error_sign_in">Sign in to YouTube Music to see this.</string>
     <string name="core_ui_error_unexpected">YouTube Music sent something Auralis doesn\'t understand yet.</string>
     <string name="core_ui_type_song">Song</string>
     <string name="core_ui_type_video">Video</string>

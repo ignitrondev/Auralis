@@ -8,6 +8,8 @@ import com.ignitrondev.auralis.domain.model.AlbumRef
 import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.CatalogItem
 import com.ignitrondev.auralis.domain.model.CatalogSection
+import com.ignitrondev.auralis.domain.model.HistorySection
+import com.ignitrondev.auralis.domain.model.ListeningHistory
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.MusicArtist
 import com.ignitrondev.auralis.domain.model.MusicPlaylist
@@ -209,5 +211,25 @@ internal object PlaylistParser {
             trackCountText = header.obj("secondSubtitle").text(),
             hasMore = items.any { it.renderer("continuationItemRenderer") != null },
         )
+    }
+}
+
+/**
+ * The account's listening history (`FEmusic_history`): one `musicShelfRenderer` per period, each
+ * with track rows. Rows that are not tracks (podcast episodes) are left out.
+ */
+internal object HistoryParser {
+    fun parse(root: JsonObject): ListeningHistory {
+        if (root.path("contents", "singleColumnBrowseResultsRenderer") == null) {
+            throw UnexpectedResponseException("history: no singleColumnBrowseResultsRenderer")
+        }
+        val shelves = root.sectionListContents("contents", "singleColumnBrowseResultsRenderer")
+            .mapNotNull { it.renderer("musicShelfRenderer") }
+        val sections = shelves.mapNotNull { shelf ->
+            val tracks = shelf.arr("contents").objects()
+                .mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem() as? MusicTrack }
+            tracks.takeIf { it.isNotEmpty() }?.let { HistorySection(shelf.obj("title").text(), it) }
+        }
+        return ListeningHistory(sections)
     }
 }
