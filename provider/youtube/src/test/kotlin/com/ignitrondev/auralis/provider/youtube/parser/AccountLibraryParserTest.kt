@@ -12,11 +12,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * History needs a signed-in session, so there is no recorded response in the repo: that would
- * be someone's real listening history. The fixture is synthetic, built on the documented
- * `FEmusic_history` shape (one `musicShelfRenderer` per period), with made-up IDs.
+ * Account pages need a signed-in session, so there are no recorded responses in the repo: they
+ * would be someone's real history and library. The fixtures are synthetic, built on the shapes of
+ * `FEmusic_history` and `FEmusic_liked_albums`, with made-up IDs.
  */
-class HistoryParserTest {
+class AccountLibraryParserTest {
 
     private fun fixture(name: String): JsonObject {
         val stream = requireNotNull(javaClass.classLoader.getResourceAsStream("fixtures/$name.json")) { "missing fixture $name" }
@@ -46,6 +46,19 @@ class HistoryParserTest {
         assertEquals("an uploader without a link is the first group, not the views", "Some Uploader", uploaded.artistNames)
         assertEquals("the podcast episode is not a track", listOf("video0000C3", "song00000A1"), history.sections[1].tracks.map { it.id })
         assertEquals("Tulus", again.artistNames)
+    }
+
+    @Test
+    fun savedAlbumsComeFromTheGridAndOnlyAlbumsAreKept(): Unit {
+        val albums = LibraryAlbumsParser.parse(fixture("saved_albums_synthetic"))
+
+        assertEquals(listOf("MPREalbum001", "MPREalbum002"), albums.map { it.id })
+        val manusia = albums[0]
+        assertEquals("Manusia", manusia.title)
+        assertEquals("Tulus", manusia.artistNames)
+        assertEquals("2022", manusia.year)
+        assertEquals("https://lh3.googleusercontent.com/album=w226-h226-l90-rj".substringBefore("=w"), manusia.artworkUri?.substringBefore("=w"))
+        assertTrue(albums[1].isExplicit)
     }
 
     @Test(expected = UnexpectedResponseException::class)

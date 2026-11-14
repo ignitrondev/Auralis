@@ -1,7 +1,10 @@
 <resources>
     <string name="feature_library_title">Library</string>
+    <string name="feature_library_liked_music">Liked music</string>
+    <string name="feature_library_liked_music_subtitle">Songs you liked on YouTube Music</string>
+    <string name="feature_library_albums">Albums</string>
     <string name="feature_library_recently_played">Recently played</string>
     <string name="feature_library_history_empty">Nothing played yet. Songs you play on YouTube Music show up here.</string>
-    <string name="feature_library_sign_in_message">Sign in to YouTube Music to see what you have been listening to, on any device.</string>
+    <string name="feature_library_sign_in_message">Sign in to YouTube Music to see your albums, liked music and what you have been listening to.</string>
     <string name="feature_library_sign_in">Sign in</string>
 </resources>
