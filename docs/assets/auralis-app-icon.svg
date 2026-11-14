@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Auralis app icon">
+<defs>
+<radialGradient id="glass" cx="0.28" cy="0" r="0.9">
+<stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+<stop offset="0.62" stop-color="#ffffff" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<rect x="1" y="1" width="510" height="510" rx="120" fill="#0b0b0b"/>
+<rect x="1" y="1" width="510" height="510" rx="120" fill="url(#glass)"/>
+<rect x="1" y="1" width="510" height="510" rx="120" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+<g transform="translate(96 96) scale(2.6667)">
+<path d="M32 92V60a28 28 0 0 1 56 0v32" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round"/>
+<circle cx="60" cy="66" r="8" fill="#ffffff"/>
+</g>
+</svg>
