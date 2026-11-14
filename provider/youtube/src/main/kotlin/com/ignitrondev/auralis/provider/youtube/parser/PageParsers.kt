@@ -262,33 +262,42 @@ internal object LibraryAlbumsParser {
 }
 
 /**
- * The like status of a track in a `next` response. Two shapes are known:
+ * The like status of a track in a `next` response. Shapes, in the order tried:
  * - a `likeButtonRenderer` whose target is the track (older responses, and list rows);
- * - a `likeStatusEntity` in `frameworkUpdates`, whose `key` is a base64 protobuf that contains the
- *   track ID (current YouTube Music web responses).
- * Both are matched by the track rather than by position, so another track's status (for example a
- * queue item) is never taken for this one.
+ * - the `likeButtonViewModel` in `playerOverlays` (current YouTube Music web): it names a
+ *   `likeStatusEntityKey`, whose entity in `frameworkUpdates` holds the newest status, and carries
+ *   its own `likeStatusEntity` as well. Its `likeEndpoint` targets the track; a view model that
+ *   targets another track is skipped.
  */
 internal object LikeStatusParser {
     fun isLiked(trackId: String, root: JsonObject): Boolean {
         val buttons = root.findObjects("likeButtonRenderer")
         buttons.firstOrNull { it.path("target").str("videoId") == trackId }?.let { return it.str("likeStatus") == LIKE }
 
-        val entities = root.findObjects("likeStatusEntity")
-        entities.firstOrNull { it.str("key")?.let { key -> keyMentions(key, trackId) } == true }
-            ?.let { return it.str("likeStatus") == LIKE }
+        val updates = root.obj("frameworkUpdates")?.findObjects("likeStatusEntity").orEmpty()
+        val viewModels = root.obj("playerOverlays")?.findObjects("likeButtonViewModel").orEmpty()
+            .filter { it.str("likeStatusEntityKey") != null || it.obj("likeStatusEntity") != null }
+        for (viewModel in viewModels) {
+            val targets = viewModel.findObjects("likeEndpoint").mapNotNull { it.path("target").str("videoId") }
+            if (targets.isNotEmpty() && trackId !in targets) continue
+            val key = viewModel.str("likeStatusEntityKey") ?: viewModel.obj("likeStatusEntity").str("key")
+            val status = updates.firstOrNull { key != null && it.str("key") == key }?.str("likeStatus")
+                ?: viewModel.obj("likeStatusEntity").str("likeStatus")
+            if (status != null) return status == LIKE
+        }
 
-        // Shape only, for diagnostics: never IDs or account data.
+        // Shape only, for diagnostics: field names, never account data.
+        val overlayFields = root.obj("playerOverlays")?.let { fieldNames(it) }.orEmpty().filter { "like" in it.lowercase() }.distinct()
         throw UnexpectedResponseException(
-            "like status: none for the track (${buttons.size} buttons, ${entities.size} entities; keys ${root.keys.sorted()})",
+            "like status: none for the track (${buttons.size} buttons, ${viewModels.size} view models, " +
+                "${updates.size} entities; overlay fields $overlayFields; keys ${root.keys.sorted()})",
         )
     }
 
-    private fun keyMentions(key: String, trackId: String): Boolean {
-        val bytes = runCatching { java.util.Base64.getDecoder().decode(key) }
-            .recoverCatching { java.util.Base64.getUrlDecoder().decode(key) }
-            .getOrNull() ?: return false
-        return String(bytes, Charsets.ISO_8859_1).contains(trackId)
+    private fun fieldNames(element: kotlinx.serialization.json.JsonElement): List<String> = when (element) {
+        is JsonObject -> element.flatMap { (name, value) -> listOf(name) + fieldNames(value) }
+        is JsonArray -> element.flatMap(::fieldNames)
+        else -> emptyList()
     }
 
     private const val LIKE = "LIKE"
