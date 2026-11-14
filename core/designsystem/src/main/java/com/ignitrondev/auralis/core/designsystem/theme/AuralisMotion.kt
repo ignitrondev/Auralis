@@ -4,6 +4,7 @@
 package com.ignitrondev.auralis.core.designsystem.theme
 
 import android.provider.Settings
+import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -13,6 +14,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
@@ -50,6 +53,36 @@ class AuralisMotion(val reducedMotion: Boolean) {
     /** Fade used to hide elements. */
     val exit: ExitTransition get() = fadeOut(tween(DURATION_SHORT_MS))
 
+    /**
+     * How an element shared between two layouts moves and resizes, such as the mini player growing
+     * into Now Playing. Instant with reduced motion; the two layouts then simply cross-fade.
+     */
+    val sharedBounds: BoundsTransform
+        get() = BoundsTransform { _, _ ->
+            if (reducedMotion) snap() else spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMediumLow)
+        }
+
+    /** Content that appears once a larger transition has settled, such as Now Playing's controls. */
+    val reveal: EnterTransition
+        get() = if (reducedMotion) {
+            fadeIn(tween(DURATION_SHORT_MS))
+        } else {
+            fadeIn(tween(DURATION_MEDIUM_MS, delayMillis = DURATION_SHORT_MS)) +
+                slideInVertically(spring(dampingRatio = 0.85f, stiffness = 380f)) { it / REVEAL_OFFSET_DIVISOR }
+        }
+
+    /** The reverse of [reveal]: gone quickly, before the larger transition runs back. */
+    val conceal: ExitTransition
+        get() = fadeOut(tween(DURATION_SHORT_MS)) +
+            if (reducedMotion) ExitTransition.None else slideOutVertically(tween(DURATION_SHORT_MS)) { it / REVEAL_OFFSET_DIVISOR }
+
+    /** Floating chrome (the navigation bar) leaving or returning along the bottom edge. */
+    val chromeEnter: EnterTransition
+        get() = if (reducedMotion) enter else fadeIn(tween(DURATION_MEDIUM_MS)) + slideInVertically(spring(dampingRatio = 0.85f, stiffness = 380f)) { it }
+
+    val chromeExit: ExitTransition
+        get() = if (reducedMotion) exit else fadeOut(tween(DURATION_SHORT_MS)) + slideOutVertically(tween(DURATION_MEDIUM_MS)) { it }
+
     /** Scale a pressed control shrinks to before springing back. */
     val pressedScale: Float get() = if (reducedMotion) 1f else PRESSED_SCALE
 
@@ -58,6 +91,7 @@ class AuralisMotion(val reducedMotion: Boolean) {
         const val DURATION_MEDIUM_MS = 240
         const val DURATION_LONG_MS = 360
         private const val PRESSED_SCALE = 0.96f
+        private const val REVEAL_OFFSET_DIVISOR = 6
     }
 }
 

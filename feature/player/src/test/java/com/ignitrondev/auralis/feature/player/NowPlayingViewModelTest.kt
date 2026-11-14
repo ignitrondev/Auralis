@@ -46,6 +46,7 @@ class NowPlayingViewModelTest {
         override fun setShuffle(enabled: Boolean) = Unit
         override fun setRepeatMode(mode: RepeatMode) = Unit
         override fun retry() = Unit
+        override fun stop() = Unit
     }
 
     private class FakeAuth : AuthRepository {

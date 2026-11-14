@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,14 +50,26 @@ import com.ignitrondev.auralis.domain.player.RepeatMode
 /**
  * Now Playing (spec section 9): blurred artwork as the ambient background, large rounded
  * artwork with a glow in its own colors, and the controls on glass.
+ *
+ * The app shell opens it from the mini player. It knows nothing about that transition: the shell
+ * passes the modifiers that animate it.
+ *
+ * @param modifier The whole screen; the shell grows it out of the mini player.
+ * @param artworkModifier The artwork, which moves from the mini player into place.
+ * @param revealModifier Track information and controls, which appear after the artwork.
  */
 @Composable
 fun NowPlayingScreen(
     onCollapse: () -> Unit,
+    modifier: Modifier = Modifier,
+    artworkModifier: Modifier = Modifier,
+    revealModifier: Modifier = Modifier,
     viewModel: NowPlayingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val like by viewModel.like.collectAsStateWithLifecycle()
+    // The account may have changed since the screen was last open (another device, another app).
+    LaunchedEffect(Unit) { viewModel.refreshLike() }
     val track = state.currentTrack
     if (track == null) {
         MessageState(stringResource(R.string.feature_player_nothing))
@@ -64,7 +77,7 @@ fun NowPlayingScreen(
     }
     val spacing = AuralisTheme.spacing
     GlassLayers(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         overlay = {
             Column(
                 modifier = Modifier
@@ -79,41 +92,43 @@ fun NowPlayingScreen(
                     uri = track.artworkUri,
                     contentDescription = stringResource(R.string.feature_player_artwork),
                     shape = AuralisTheme.shapes.large,
-                    modifier = Modifier
+                    modifier = artworkModifier
                         .widthIn(max = 420.dp)
                         .fillMaxWidth(0.86f)
                         .aspectRatio(1f),
                 )
                 Spacer(Modifier.weight(0.7f))
-                Text(
-                    text = track.title,
-                    style = AuralisTheme.typography.nowPlayingTitle,
-                    color = AuralisTheme.colors.contentPrimary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(
-                    text = track.artistNames,
-                    style = AuralisTheme.typography.body,
-                    color = AuralisTheme.colors.contentSecondary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = spacing.xs),
-                )
-                if (like.failed) {
+                Column(modifier = revealModifier, horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = stringResource(R.string.feature_player_like_failed),
-                        style = AuralisTheme.typography.bodySmall,
+                        text = track.title,
+                        style = AuralisTheme.typography.nowPlayingTitle,
+                        color = AuralisTheme.colors.contentPrimary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(
+                        text = track.artistNames,
+                        style = AuralisTheme.typography.body,
                         color = AuralisTheme.colors.contentSecondary,
                         textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = spacing.xs),
                     )
+                    if (like.failed) {
+                        Text(
+                            text = stringResource(R.string.feature_player_like_failed),
+                            style = AuralisTheme.typography.bodySmall,
+                            color = AuralisTheme.colors.contentSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = spacing.xs),
+                        )
+                    }
+                    Spacer(Modifier.height(spacing.xl))
+                    ControlsPanel(state = state, viewModel = viewModel)
                 }
-                Spacer(Modifier.height(spacing.xl))
-                ControlsPanel(state = state, viewModel = viewModel)
                 Spacer(Modifier.height(spacing.lg))
             }
         },

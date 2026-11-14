@@ -49,12 +49,17 @@ class NowPlayingViewModel @Inject constructor(
 
     private val _like = MutableStateFlow(LikeUiState())
     val like: StateFlow<LikeUiState> = _like.asStateFlow()
+    private val likeRefreshes = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
-            combine(auth.state, player.state.map { it.currentTrack?.id }.distinctUntilChanged()) { account, trackId ->
-                trackId.takeIf { account is AuthState.SignedIn }
-            }.distinctUntilChanged().collectLatest { trackId ->
+            combine(
+                auth.state,
+                player.state.map { it.currentTrack?.id }.distinctUntilChanged(),
+                likeRefreshes,
+            ) { account, trackId, refresh ->
+                trackId.takeIf { account is AuthState.SignedIn } to refresh
+            }.distinctUntilChanged().collectLatest { (trackId, _) ->
                 _like.value = LikeUiState(trackId = trackId)
                 if (trackId == null) return@collectLatest
                 val liked = try {
@@ -66,6 +71,9 @@ class NowPlayingViewModel @Inject constructor(
             }
         }
     }
+
+    /** Reads the like status from the account again, for example when Now Playing opens. */
+    fun refreshLike() = likeRefreshes.update { it + 1 }
 
     /** Changes the like right away and reverts it if the account rejects the change. */
     fun toggleLike() {

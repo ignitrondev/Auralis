@@ -52,7 +52,8 @@ private val ProgressStroke = 2.dp
  * @param onClick Opens the Now Playing screen; null when there is nowhere to go yet (the player
  * then has no click semantics, so it never looks like a control that does nothing).
  * @param onNextClick Shows a next-track button when not null.
- * @param artwork Album artwork. Defaults to the neutral gradient used when there is no artwork.
+ * @param artwork Album artwork, clipped to a small rounded square like the Now Playing artwork it
+ * grows into. Defaults to the neutral gradient used when there is no artwork.
  */
 @Composable
 fun GlassMiniPlayer(
@@ -102,7 +103,7 @@ fun GlassMiniPlayer(
             Box(
                 modifier = Modifier
                     .size(ArtworkSize)
-                    .clip(CircleShape),
+                    .clip(AuralisTheme.shapes.small),
             ) {
                 artwork()
             }
