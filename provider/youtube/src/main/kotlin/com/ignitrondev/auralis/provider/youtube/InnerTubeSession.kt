@@ -27,7 +27,10 @@ internal class InnerTubeSession(
     val httpClient: HttpClient = defaultHttpClient(),
     logger: InnerTubeLogger = InnerTubeLogger.NONE,
 ) : AutoCloseable {
-    val innerTube = InnerTube(httpClient = httpClient, logger = logger)
+    val innerTube = InnerTube(httpClient = httpClient, logger = logger).apply {
+        // InnerTubeX would send the full device tag (for example "en-ID"), which search rejects.
+        locale = youTubeLocaleFor(java.util.Locale.getDefault())
+    }
 
     private val cipherService = YouTubeCipherService(httpClient = httpClient, remotePlayerConfigStore = null, logger = logger)
 

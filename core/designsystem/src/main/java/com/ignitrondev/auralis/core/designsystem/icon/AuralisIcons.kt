@@ -5,7 +5,10 @@ package com.ignitrondev.auralis.core.designsystem.icon
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
@@ -22,6 +25,9 @@ object AuralisIcons {
     val Library: ImageVector = Icons.AutoMirrored.Rounded.List
     val Settings: ImageVector = Icons.Rounded.Settings
     val Play: ImageVector = Icons.Rounded.PlayArrow
+    val Close: ImageVector = Icons.Rounded.Close
+    val Back: ImageVector = Icons.AutoMirrored.Rounded.ArrowBack
+    val Retry: ImageVector = Icons.Rounded.Refresh
 
     /** Two rounded bars. Not in material-icons-core, so it is drawn here. */
     val Pause: ImageVector by lazy {

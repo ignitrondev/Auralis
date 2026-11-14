@@ -7,7 +7,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
-import com.ignitrondev.auralis.feature.search.SearchScreen
+import com.ignitrondev.auralis.core.ui.CatalogActions
+import com.ignitrondev.auralis.feature.search.SearchDestination
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,8 +16,8 @@ data object SearchRoute
 
 fun NavController.navigateToSearch(navOptions: NavOptions? = null) = navigate(SearchRoute, navOptions)
 
-fun NavGraphBuilder.searchScreen() {
+fun NavGraphBuilder.searchScreen(actions: CatalogActions) {
     composable<SearchRoute> {
-        SearchScreen()
+        SearchDestination(actions = actions)
     }
 }

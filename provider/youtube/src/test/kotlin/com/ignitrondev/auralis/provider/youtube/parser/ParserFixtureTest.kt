@@ -119,6 +119,24 @@ class ParserFixtureTest {
     }
 
     @Test
+    fun songsWithoutArtistNeverUseTheDurationAsArtist() {
+        val results = SearchParser.parse("daft punk", fixture("search_daftpunk"))
+        val veridis = results.tracks.first { it.title == "Veridis Quo" }
+        assertTrue("the row lists no artist", veridis.artists.isEmpty())
+        assertEquals(346_000L, veridis.durationMs)
+        results.tracks.forEach { track ->
+            assertFalse("${track.title} has a duration as artist", track.artists.any { it.name.matches(Regex("\\d+:\\d{2}")) })
+        }
+    }
+
+    @Test
+    fun topResultSubtitleHasNoTypeLabel() {
+        val top = SearchParser.parse("daft punk", fixture("search_daftpunk")).topResult as MusicArtist
+        assertEquals("Daft Punk", top.name)
+        assertEquals("66.1M monthly audience", top.subtitle)
+    }
+
+    @Test
     fun durationsAndArtworkHelpers() {
         assertEquals(244_000L, parseDuration("4:04"))
         assertEquals(3_723_000L, parseDuration("1:02:03"))

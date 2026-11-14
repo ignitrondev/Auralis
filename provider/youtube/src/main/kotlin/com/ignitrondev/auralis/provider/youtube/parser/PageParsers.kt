@@ -89,10 +89,14 @@ internal object SearchParser {
             )
         }
         val target = endpoint.browseTarget() ?: return null
+        // The card subtitle starts with a localized type label ("Artist • …"); the UI adds its own.
+        val details = subtitleRuns.groupsBySeparator().drop(1)
+            .joinToString(" • ") { group -> group.joinToString("") { it.str("text").orEmpty() } }
+            .ifBlank { null }
         return when (target.pageType) {
-            PageType.ARTIST -> MusicArtist(target.id, SOURCE_ID, title, artwork, obj("subtitle").text())
+            PageType.ARTIST -> MusicArtist(target.id, SOURCE_ID, title, artwork, details)
             PageType.ALBUM -> MusicAlbum(target.id, SOURCE_ID, title, subtitleRuns.groupsBySeparator().getOrNull(1).orEmpty().artistRefs(), null, artwork)
-            PageType.PLAYLIST -> MusicPlaylist(target.id, SOURCE_ID, title, null, artwork, obj("subtitle").text())
+            PageType.PLAYLIST -> MusicPlaylist(target.id, SOURCE_ID, title, null, artwork, details)
             else -> null
         }
     }
