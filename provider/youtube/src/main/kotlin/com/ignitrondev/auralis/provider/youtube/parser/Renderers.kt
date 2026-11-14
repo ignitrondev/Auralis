@@ -113,11 +113,18 @@ private fun JsonObject.hasExplicitBadge(): Boolean =
         badge.path("musicInlineBadgeRenderer", "icon").str("iconType") == "MUSIC_EXPLICIT_BADGE"
     }
 
-/** Converts a `musicResponsiveListItemRenderer` (search rows, album and playlist tracks). */
+/**
+ * Converts a `musicResponsiveListItemRenderer` (search rows, album, playlist and history tracks).
+ *
+ * @param unlinkedArtistGroup Which " • " group of the second column names the artist when it is
+ * not a link: search rows start with the type ("Video • Artist • views"), history rows do not
+ * ("Uploader • views").
+ */
 internal fun JsonObject.responsiveListItem(
     defaultArtwork: String? = null,
     defaultAlbum: AlbumRef? = null,
     defaultArtists: List<ArtistRef> = emptyList(),
+    unlinkedArtistGroup: Int = 1,
 ): CatalogItem? {
     val columns = arr("flexColumns").objects().map { it.path("musicResponsiveListItemFlexColumnRenderer", "text") }
     val titleRun = columns.firstOrNull().runs().firstOrNull()
@@ -172,8 +179,7 @@ internal fun JsonObject.responsiveListItem(
         .firstNotNullOfOrNull { parseDuration(it.path("musicResponsiveListItemFixedColumnRenderer", "text").text()) }
         ?: detailRuns.lastOrNull { run -> run.str("text")?.matches(durationPattern) == true }?.let { parseDuration(it.str("text")) }
     val artists = linkedArtists.ifEmpty {
-        // Search rows put the artist in the second group: "Song • Artist • …".
-        columns.getOrNull(1).runs().groupsBySeparator().getOrNull(1).orEmpty().artistRefs()
+        columns.getOrNull(1).runs().groupsBySeparator().getOrNull(unlinkedArtistGroup).orEmpty().artistRefs()
     }.ifEmpty { defaultArtists }
 
     return MusicTrack(

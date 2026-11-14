@@ -84,6 +84,8 @@ class ParserFixtureTest {
         assertEquals("M83", detail.album.artistNames)
         assertEquals("22 songs", detail.trackCountText?.substringBefore(" •"))
         assertEquals(22, detail.tracks.size)
+        assertEquals("the album's playlist is what the library saves", "OLAK5uy_lLGsT6ZVnWyAwEu1CRkZBTLvvloriMRsk", detail.libraryPlaylistId)
+        assertFalse("signed out, nothing is saved", detail.isSavedToLibrary)
 
         val intro = detail.tracks.first()
         assertEquals("Intro", intro.title)

@@ -3,8 +3,10 @@
  */
 package com.ignitrondev.auralis.core.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,10 +18,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -110,6 +114,8 @@ fun SectionCarousel(
  * One row in a list: artwork (or a track number), title, subtitle and an optional trailing text.
  *
  * @param leadingNumber Shown instead of artwork, for album track lists.
+ * @param leadingIcon Shown on a neutral tile instead of artwork, for entries with no artwork of
+ * their own (for example "Liked music").
  */
 @Composable
 fun CatalogRow(
@@ -118,6 +124,7 @@ fun CatalogRow(
     modifier: Modifier = Modifier,
     subtitle: String = item.subtitle(),
     leadingNumber: Int? = null,
+    leadingIcon: ImageVector? = null,
     trailing: String? = null,
 ) {
     val colors = AuralisTheme.colors
@@ -130,7 +137,16 @@ fun CatalogRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
-        if (leadingNumber != null) {
+        if (leadingIcon != null) {
+            Box(
+                modifier = Modifier
+                    .size(RowArtworkSize)
+                    .background(colors.selection, AuralisTheme.shapes.small),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(imageVector = leadingIcon, contentDescription = null, tint = colors.contentPrimary)
+            }
+        } else if (leadingNumber != null) {
             Text(
                 text = leadingNumber.toString(),
                 style = AuralisTheme.typography.timestamp,

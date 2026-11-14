@@ -6,7 +6,11 @@ package com.ignitrondev.auralis.core.designsystem.icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Refresh
@@ -30,6 +34,14 @@ object AuralisIcons {
     val Back: ImageVector = Icons.AutoMirrored.Rounded.ArrowBack
     val Retry: ImageVector = Icons.Rounded.Refresh
     val Collapse: ImageVector = Icons.Rounded.KeyboardArrowDown
+
+    /** Liked is shown by shape, never by colour (spec 8.2.1): filled when liked, outline when not. */
+    val Liked: ImageVector = Icons.Rounded.Favorite
+    val NotLiked: ImageVector = Icons.Rounded.FavoriteBorder
+
+    /** Save to the library, and saved. */
+    val Add: ImageVector = Icons.Rounded.Add
+    val Saved: ImageVector = Icons.Rounded.Check
 
     /** Two rounded bars. Not in material-icons-core, so it is drawn here. */
     val Pause: ImageVector by lazy {

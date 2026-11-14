@@ -6,9 +6,12 @@ package com.ignitrondev.auralis.provider.youtube
 import com.ignitrondev.auralis.domain.model.AlbumDetail
 import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.HomeFeed
+import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import com.ignitrondev.auralis.domain.repository.CatalogException
+import com.ignitrondev.auralis.provider.api.AccountLibraryProvider
 import com.ignitrondev.auralis.provider.api.AccountSessionProvider
 import com.ignitrondev.auralis.provider.api.CatalogProvider
 import com.ignitrondev.auralis.provider.api.ProviderAccount
@@ -19,6 +22,9 @@ import com.ignitrondev.auralis.provider.api.StreamProvider
 import com.ignitrondev.auralis.provider.youtube.parser.AlbumParser
 import com.ignitrondev.auralis.provider.youtube.parser.ArtistParser
 import com.ignitrondev.auralis.provider.youtube.parser.FeedParser
+import com.ignitrondev.auralis.provider.youtube.parser.HistoryParser
+import com.ignitrondev.auralis.provider.youtube.parser.LibraryAlbumsParser
+import com.ignitrondev.auralis.provider.youtube.parser.LikeStatusParser
 import com.ignitrondev.auralis.provider.youtube.parser.PlaylistParser
 import com.ignitrondev.auralis.provider.youtube.parser.SOURCE_ID
 import com.ignitrondev.auralis.provider.youtube.parser.SearchParser
@@ -48,12 +54,12 @@ import kotlinx.serialization.json.jsonObject
 import java.io.IOException
 
 /**
- * YouTube Music catalog through InnerTube (spec section 6.1). Signed out for now; account
- * features come with the sign-in flow. One instance per process: it owns an HTTP client.
+ * YouTube Music through InnerTube (spec section 6.1): the catalog and streams work signed out;
+ * the account library needs a session. One instance per process: it owns an HTTP client.
  */
 class YouTubeMusicProvider internal constructor(
     private val session: InnerTubeSession,
-) : CatalogProvider, StreamProvider, AccountSessionProvider, AutoCloseable {
+) : CatalogProvider, StreamProvider, AccountSessionProvider, AccountLibraryProvider, AutoCloseable {
 
     /**
      * @param attestation Mints BotGuard tokens for signed-out playback. Without it the catalog
@@ -110,6 +116,81 @@ class YouTubeMusicProvider internal constructor(
         // Browse ids for playlists carry a "VL" prefix; plain playlist ids are accepted too.
         val browseId = if (id.startsWith("VL")) id else "VL$id"
         PlaylistParser.parse(browseId, browse(browseId))
+    }
+
+    /** The account's listening history, as YouTube Music records it for this account on any device. */
+    override suspend fun history(): ListeningHistory = request("history") {
+        HistoryParser.parse(accountBrowse("history", HISTORY_BROWSE_ID))
+    }
+
+    override suspend fun savedAlbums(): List<MusicAlbum> = request("saved albums") {
+        LibraryAlbumsParser.parse(accountBrowse("saved albums", SAVED_ALBUMS_BROWSE_ID))
+    }
+
+    override suspend fun isTrackLiked(trackId: String): Boolean = request("like status") {
+        requireSession("like status")
+        val response = rejectedSessionAware("like status") { session.innerTube.next(MUSIC_CLIENT, videoId = trackId) }
+        LikeStatusParser.isLiked(trackId, response.toJson("like status"))
+    }
+
+    override suspend fun setTrackLiked(trackId: String, liked: Boolean) = request("like") {
+        requireSession("like")
+        val response = rejectedSessionAware("like") {
+            if (liked) session.innerTube.likeVideo(MUSIC_CLIENT, trackId) else session.innerTube.unlikeVideo(MUSIC_CLIENT, trackId)
+        }
+        response.requireSuccess("like")
+    }
+
+    override suspend fun setAlbumSaved(libraryPlaylistId: String, saved: Boolean) = request("save album") {
+        requireSession("save album")
+        // YouTube Music saves an album by liking the album's playlist.
+        val response = rejectedSessionAware("save album") {
+            if (saved) {
+                session.innerTube.likePlaylist(MUSIC_CLIENT, libraryPlaylistId)
+            } else {
+                session.innerTube.unlikePlaylist(MUSIC_CLIENT, libraryPlaylistId)
+            }
+        }
+        response.requireSuccess("save album")
+    }
+
+    private fun requireSession(operation: String) {
+        if (!session.innerTube.hasSapCookieAuth()) {
+            throw CatalogException(CatalogException.Reason.SignInRequired, "$operation: signed out")
+        }
+    }
+
+    /** Runs an account call; a rejected session (401 or 403) becomes [CatalogException.Reason.SignInRequired]. */
+    private suspend fun rejectedSessionAware(operation: String, call: suspend () -> HttpResponse): HttpResponse {
+        val response = try {
+            call()
+        } catch (error: InnerTubeHttpException) {
+            if (error.status.value in SESSION_REJECTED) {
+                throw CatalogException(CatalogException.Reason.SignInRequired, "$operation: HTTP ${error.status.value}", error)
+            }
+            throw error
+        }
+        if (response.status.value in SESSION_REJECTED) {
+            throw CatalogException(CatalogException.Reason.SignInRequired, "$operation: HTTP ${response.status.value}")
+        }
+        return response
+    }
+
+    private fun HttpResponse.requireSuccess(operation: String) {
+        if (status.value !in 200..299) {
+            throw CatalogException(CatalogException.Reason.Network, "$operation: HTTP ${status.value}")
+        }
+    }
+
+    /**
+     * Browses a page that belongs to the account. Refuses early when signed out, so no request is
+     * sent without a session; a rejected session (401 or 403, as a response or an exception) is
+     * reported as [CatalogException.Reason.SignInRequired].
+     */
+    private suspend fun accountBrowse(operation: String, browseId: String): JsonObject {
+        requireSession(operation)
+        val response = rejectedSessionAware(operation) { session.innerTube.browse(MUSIC_CLIENT, browseId = browseId) }
+        return response.toJson(operation)
     }
 
     /**
@@ -235,5 +316,8 @@ class YouTubeMusicProvider internal constructor(
         val MUSIC_CLIENT = YouTubeClient.WEB_REMIX
         const val HOME_BROWSE_ID = "FEmusic_home"
         const val EXPLORE_BROWSE_ID = "FEmusic_explore"
+        const val HISTORY_BROWSE_ID = "FEmusic_history"
+        const val SAVED_ALBUMS_BROWSE_ID = "FEmusic_liked_albums"
+        val SESSION_REJECTED = setOf(401, 403)
     }
 }

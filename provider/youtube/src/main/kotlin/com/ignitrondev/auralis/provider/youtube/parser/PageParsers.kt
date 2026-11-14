@@ -8,6 +8,8 @@ import com.ignitrondev.auralis.domain.model.AlbumRef
 import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.CatalogItem
 import com.ignitrondev.auralis.domain.model.CatalogSection
+import com.ignitrondev.auralis.domain.model.HistorySection
+import com.ignitrondev.auralis.domain.model.ListeningHistory
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.MusicArtist
 import com.ignitrondev.auralis.domain.model.MusicPlaylist
@@ -140,11 +142,17 @@ internal object AlbumParser {
             ) as? MusicTrack
         }.orEmpty()
 
+        val buttons = header.arr("buttons").objects()
         return AlbumDetail(
             album = album,
             tracks = tracks,
             description = header.path("description", "musicDescriptionShelfRenderer").obj("description").text(),
             trackCountText = header.obj("secondSubtitle").text(),
+            libraryPlaylistId = buttons.firstNotNullOfOrNull {
+                it.path("musicPlayButtonRenderer", "playNavigationEndpoint", "watchPlaylistEndpoint").str("playlistId")
+            },
+            // The save button: toggled when the signed-in account has the album in its library.
+            isSavedToLibrary = buttons.any { it.renderer("toggleButtonRenderer")?.bool("isToggled") == true },
         )
     }
 }
@@ -193,7 +201,8 @@ internal object PlaylistParser {
         val shelf = columns.path("secondaryContents", "sectionListRenderer").arr("contents").objects()
             .firstNotNullOfOrNull { it.renderer("musicPlaylistShelfRenderer") }
         val items = shelf?.arr("contents").objects()
-        val tracks = items.mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem() as? MusicTrack }
+        // Playlist rows have no type prefix: an uploader without a link is the first group.
+        val tracks = items.mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem(unlinkedArtistGroup = 0) as? MusicTrack }
         val playlist = MusicPlaylist(
             id = id,
             sourceId = SOURCE_ID,
@@ -210,4 +219,77 @@ internal object PlaylistParser {
             hasMore = items.any { it.renderer("continuationItemRenderer") != null },
         )
     }
+}
+
+/**
+ * The account's listening history (`FEmusic_history`): one `musicShelfRenderer` per period, each
+ * with track rows. Rows that are not tracks (podcast episodes) are left out.
+ */
+internal object HistoryParser {
+    fun parse(root: JsonObject): ListeningHistory {
+        if (root.path("contents", "singleColumnBrowseResultsRenderer") == null) {
+            throw UnexpectedResponseException("history: no singleColumnBrowseResultsRenderer")
+        }
+        val shelves = root.sectionListContents("contents", "singleColumnBrowseResultsRenderer")
+            .mapNotNull { it.renderer("musicShelfRenderer") }
+        val sections = shelves.mapNotNull { shelf ->
+            val tracks = shelf.arr("contents").objects()
+                .mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem(unlinkedArtistGroup = 0) as? MusicTrack }
+            tracks.takeIf { it.isNotEmpty() }?.let { HistorySection(shelf.obj("title").text(), it) }
+        }
+        return ListeningHistory(sections)
+    }
+}
+
+/**
+ * Albums saved to the account's library (`FEmusic_liked_albums`): a `gridRenderer` of album cards,
+ * either directly in the section list or inside an `itemSectionRenderer`.
+ */
+internal object LibraryAlbumsParser {
+    fun parse(root: JsonObject): List<MusicAlbum> {
+        if (root.path("contents", "singleColumnBrowseResultsRenderer") == null) {
+            throw UnexpectedResponseException("saved albums: no singleColumnBrowseResultsRenderer")
+        }
+        val sections = root.sectionListContents("contents", "singleColumnBrowseResultsRenderer")
+        val grids = sections.flatMap { section ->
+            listOfNotNull(section.renderer("gridRenderer")) +
+                section.renderer("itemSectionRenderer")?.arr("contents").objects().mapNotNull { it.renderer("gridRenderer") }
+        }
+        return grids.flatMap { grid -> grid.arr("items").objects() }
+            .mapNotNull { it.renderer("musicTwoRowItemRenderer")?.twoRowItem() as? MusicAlbum }
+            .distinctBy { it.id }
+    }
+}
+
+/**
+ * The like status of a track in a `next` response. Two shapes are known:
+ * - a `likeButtonRenderer` whose target is the track (older responses, and list rows);
+ * - a `likeStatusEntity` in `frameworkUpdates`, whose `key` is a base64 protobuf that contains the
+ *   track ID (current YouTube Music web responses).
+ * Both are matched by the track rather than by position, so another track's status (for example a
+ * queue item) is never taken for this one.
+ */
+internal object LikeStatusParser {
+    fun isLiked(trackId: String, root: JsonObject): Boolean {
+        val buttons = root.findObjects("likeButtonRenderer")
+        buttons.firstOrNull { it.path("target").str("videoId") == trackId }?.let { return it.str("likeStatus") == LIKE }
+
+        val entities = root.findObjects("likeStatusEntity")
+        entities.firstOrNull { it.str("key")?.let { key -> keyMentions(key, trackId) } == true }
+            ?.let { return it.str("likeStatus") == LIKE }
+
+        // Shape only, for diagnostics: never IDs or account data.
+        throw UnexpectedResponseException(
+            "like status: none for the track (${buttons.size} buttons, ${entities.size} entities; keys ${root.keys.sorted()})",
+        )
+    }
+
+    private fun keyMentions(key: String, trackId: String): Boolean {
+        val bytes = runCatching { java.util.Base64.getDecoder().decode(key) }
+            .recoverCatching { java.util.Base64.getUrlDecoder().decode(key) }
+            .getOrNull() ?: return false
+        return String(bytes, Charsets.ISO_8859_1).contains(trackId)
+    }
+
+    private const val LIKE = "LIKE"
 }
