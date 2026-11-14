@@ -45,11 +45,11 @@ system font. The licenses are in `src/main/assets/licenses/` and listed in the r
 | Component | Use |
 | --- | --- |
 | `GlassLayers(overlay) { content }` | Stacks floating glass over content. `content` (on the theme background) is recorded as the backdrop; glass in `overlay` blurs and refracts it. |
-| `GlassSurface` | The base glass material. Over a backdrop it blurs (Android 12+) and refracts at the edges (Android 13+). Without one it draws a readable fallback fill. Nested inside another glass surface it draws a light inner layer. |
+| `GlassSurface` | The base glass material. Over a backdrop it blurs (Android 12+) and refracts at the edges (Android 13+). Without one it draws a readable fallback fill. Nested inside another glass surface it draws a light inner layer. Glass is flat: no gradient sheen on the surface, and the rim light is even all around. |
 | `GlassCard` | Rounded glass container for grouped content. Optional `onClick` adds press scale, ripple and button semantics. |
 | `GlassButton` | Capsule button with a label and optional icon. |
 | `GlassIconButton` | Circular icon-only button. `contentDescription` is required. |
-| `GlassNavigationBar` + `GlassNavigationBarItem` | Floating capsule navigation bar. Goes in the `GlassLayers` overlay. The selected tab sits on a `selection` pill with a heavier label (no color change). Items have the `Tab` role. |
+| `GlassNavigationBar` + `GlassNavigationBarItem` | Floating capsule navigation bar. Goes in the `GlassLayers` overlay. The selected tab sits on a small glass lens (`GlassIndicator`) that refracts the content behind the bar, with a heavier label (no color change). Items have the `Tab` role. |
 | `GlassMiniPlayer` | Floating capsule mini player: artwork, title, artist, play/pause, optional next, and a thin progress line. Stateless. `progress` is a lambda read only while drawing, so position updates do not recompose. Tapping the player opens Now Playing (`onClick`). |
 | `ArtworkFallback` | Neutral gradient for tracks without artwork. Never a colored placeholder. |
 | `LocalBottomChromePadding` | Bottom space covered by floating chrome (bar plus system inset). Scrolling screens add it to their bottom content padding so content scrolls under the glass but ends above it. |

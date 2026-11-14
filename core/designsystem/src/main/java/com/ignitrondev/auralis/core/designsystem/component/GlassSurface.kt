@@ -16,9 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.dp
@@ -28,8 +26,8 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.highlight.HighlightStyle
 import com.kyant.backdrop.shadow.Shadow
-import kotlin.math.max
 
 /** True inside another glass surface, so nested glass draws a light inner layer. */
 private val LocalInsideGlass = staticCompositionLocalOf { false }
@@ -39,15 +37,15 @@ private val LocalInsideGlass = staticCompositionLocalOf { false }
  *
  * It renders one of three ways:
  * - **Over a backdrop** (inside the overlay of [GlassLayers]): the backdrop is blurred
- *   (Android 12+) and refracted through a lens at the edges (Android 13+), with a specular rim
- *   and a soft shadow. Text stays readable because the glass tint includes the theme scrim.
+ *   (Android 12+) and refracted through a lens at the edges (Android 13+), with an even rim and
+ *   a soft shadow. Text stays readable because the glass tint includes the theme scrim.
  *   Below Android 12, where blur is unavailable, a near-opaque fallback tint is used instead.
- * - **Without a backdrop**: an opaque-enough fallback fill with a top-left highlight.
+ * - **Without a backdrop**: a flat, opaque-enough fallback fill.
  * - **Nested in another glass surface**: a light inner layer, so glass never stacks heavily.
  *
- * Every variant has a hairline border so the edge stays visible in the light theme, and a soft
- * top-left highlight. Content gets [AuralisColors.contentPrimary] as its content color. The blur
- * itself is never animated.
+ * Glass is flat: no gradient sheen on the surface. Every variant has a hairline border so the
+ * edge stays visible in the light theme. Content gets [AuralisColors.contentPrimary] as its
+ * content color. The blur itself is never animated.
  */
 @Composable
 fun GlassSurface(
@@ -77,7 +75,7 @@ fun GlassSurface(
                             refractionAmount = GlassLensAmount.toPx(),
                         )
                     },
-                    highlight = { Highlight.Default },
+                    highlight = { FlatRim },
                     shadow = { shadow },
                     onDrawSurface = { drawRect(tint) },
                 )
@@ -86,7 +84,6 @@ fun GlassSurface(
         else -> Modifier
             .clip(shape)
             .background(colors.surfaceGlassFallback)
-            .glassHighlight(colors.highlight)
     }
 
     Box(
@@ -115,16 +112,57 @@ private fun glassTint(colors: AuralisColors): Color =
         colors.surfaceGlassFallback
     }
 
+/** An even rim light around the edge, with no directional gradient. */
+private val FlatRim = Highlight(style = HighlightStyle.Plain())
+
 private val GlassBlurRadius = 12.dp
 private val GlassLensHeight = 16.dp
 private val GlassLensAmount = 32.dp
 
-/** Soft sheen from the top-left corner, used by the fallback glass fill. */
-private fun Modifier.glassHighlight(color: Color): Modifier = drawWithCache {
-    val brush = Brush.radialGradient(
-        colors = listOf(color, Color.Transparent),
-        center = Offset.Zero,
-        radius = max(size.width, size.height) * 0.9f,
+/**
+ * A small glass lens, used to mark the selected item inside a glass bar. It refracts the content
+ * behind the bar, so selection reads as a piece of glass rather than a flat fill. Without a
+ * backdrop it falls back to the flat selection fill.
+ *
+ * @param alpha Opacity, so the lens can fade in and out without animating the blur.
+ */
+@Composable
+internal fun GlassIndicator(
+    alpha: () -> Float,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = AuralisTheme.shapes.capsule,
+) {
+    val colors = AuralisTheme.colors
+    val backdrop = LocalGlassBackdrop.current
+    if (backdrop == null) {
+        Box(
+            modifier
+                .graphicsLayer { this.alpha = alpha() }
+                .clip(shape)
+                .background(colors.selection),
+        )
+        return
+    }
+    Box(
+        modifier
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { shape },
+                effects = {
+                    blur(IndicatorBlurRadius.toPx())
+                    lens(
+                        refractionHeight = IndicatorLensHeight.toPx(),
+                        refractionAmount = IndicatorLensAmount.toPx(),
+                    )
+                },
+                highlight = { FlatRim },
+                shadow = null,
+                layerBlock = { this.alpha = alpha() },
+                onDrawSurface = { drawRect(colors.selection) },
+            ),
     )
-    onDrawBehind { drawRect(brush) }
 }
+
+private val IndicatorBlurRadius = 6.dp
+private val IndicatorLensHeight = 10.dp
+private val IndicatorLensAmount = 20.dp
