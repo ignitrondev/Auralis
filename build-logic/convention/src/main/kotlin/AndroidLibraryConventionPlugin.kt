@@ -21,6 +21,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 defaultConfig {
                     minSdk = libs.intVersion("min-sdk")
                     consumerProguardFiles("consumer-rules.pro")
+                    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                 }
                 compileOptions {
                     sourceCompatibility = AuralisJavaVersion

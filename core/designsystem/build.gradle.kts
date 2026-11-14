@@ -16,4 +16,11 @@ dependencies {
     // Backdrop blur and lens refraction for glass surfaces. Kept as implementation: no Backdrop
     // type is part of the design system API, so the library stays replaceable.
     implementation(libs.backdrop)
+
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
