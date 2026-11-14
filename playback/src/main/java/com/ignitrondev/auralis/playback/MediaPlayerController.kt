@@ -117,6 +117,16 @@ class MediaPlayerController @Inject constructor(
         }
     }
 
+    override fun stop() {
+        errors.report(null)
+        withController { player ->
+            player.stop()
+            // An empty queue is saved as "no queue" by the service, so it is not restored later.
+            player.clearMediaItems()
+            tracks.clear()
+        }
+    }
+
     private fun publish(player: Player) {
         val queue = (0 until player.mediaItemCount).map { index ->
             val item = player.getMediaItemAt(index)

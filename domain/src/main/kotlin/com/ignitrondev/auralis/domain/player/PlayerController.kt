@@ -32,4 +32,10 @@ interface PlayerController {
 
     /** Retries after an error, keeping the position. */
     fun retry()
+
+    /**
+     * Stops playback and clears the queue, including the saved one: nothing is left to resume and
+     * the media notification goes away.
+     */
+    fun stop()
 }
