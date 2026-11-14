@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -111,10 +110,9 @@ private fun Gallery(dark: Boolean, onToggleTheme: () -> Unit) {
             }
         },
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 260.dp),
-        ) {
+        // No bottom padding on purpose: the last artwork scrolls under the floating glass so the
+        // blur and lens can be checked.
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             item { FakeArtwork(Modifier.fillMaxWidth().height(360.dp)) }
             item {
                 Column(

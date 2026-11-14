@@ -44,8 +44,8 @@ system font. The licenses are in `src/main/assets/licenses/` and listed in the r
 
 | Component | Use |
 | --- | --- |
-| `GlassLayers(overlay) { content }` | Stacks floating glass over content. `content` is the backdrop; glass in `overlay` blurs and refracts it. |
-| `GlassSurface` | The base glass material. Over a backdrop it blurs (Android 12) or refracts (Android 13+). Without one it draws a readable fallback fill. Nested inside another glass surface it draws a light inner layer. |
+| `GlassLayers(overlay) { content }` | Stacks floating glass over content. `content` (on the theme background) is recorded as the backdrop; glass in `overlay` blurs and refracts it. |
+| `GlassSurface` | The base glass material. Over a backdrop it blurs (Android 12+) and refracts at the edges (Android 13+). Without one it draws a readable fallback fill. Nested inside another glass surface it draws a light inner layer. |
 | `GlassCard` | Rounded glass container for grouped content. Optional `onClick` adds press scale, ripple and button semantics. |
 | `GlassButton` | Capsule button with a label and optional icon. |
 | `GlassIconButton` | Circular icon-only button. `contentDescription` is required. |
@@ -59,11 +59,12 @@ system font. The licenses are in `src/main/assets/licenses/` and listed in the r
 
 ### Glass rendering
 
-Backdrop blur and refraction come from [Haze](https://github.com/chrisbanes/haze)
-(Apache-2.0). Haze types never leave this module, so it can be replaced. The glass tint
-includes the theme scrim so text stays readable over bright artwork, and below Android 12 the
-tint is close to opaque. Every glass surface has a hairline `borderSubtle` edge, which keeps it
-visible in the light theme.
+Glass rendering comes from [Backdrop](https://github.com/Kyant0/AndroidLiquidGlass) by Kyant0
+(Apache-2.0): the backdrop is blurred on Android 12+ and refracted through a lens at the edges
+on Android 13+, with a specular rim and a soft shadow. Backdrop types never leave this module,
+so the library can be replaced. The glass tint includes the theme scrim so text stays readable
+over bright artwork, and below Android 12 the tint is close to opaque. Every glass surface has a
+hairline `borderSubtle` edge, which keeps it visible in the light theme.
 
 ### Gallery (debug builds)
 

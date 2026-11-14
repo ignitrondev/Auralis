@@ -13,8 +13,7 @@ dependencies {
     api(libs.androidx.compose.material3)
     api(libs.androidx.compose.material.icons.core)
 
-    // Backdrop blur / refraction for glass surfaces. Kept as implementation: no Haze type is
-    // part of the design system API, so the library stays replaceable.
-    implementation(libs.haze)
-    implementation(libs.haze.glass)
+    // Backdrop blur and lens refraction for glass surfaces. Kept as implementation: no Backdrop
+    // type is part of the design system API, so the library stays replaceable.
+    implementation(libs.backdrop)
 }
