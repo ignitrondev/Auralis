@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Debug builds only: design system gallery for checking components in both themes.
+         Exported so it can be opened with:
+         adb shell am start -n com.ignitrondev.auralis/.debug.DesignSystemGalleryActivity -->
+    <application>
+        <activity
+            android:name=".debug.DesignSystemGalleryActivity"
+            android:exported="true"
+            android:label="Auralis design system" />
+    </application>
+
+</manifest>
