@@ -4,21 +4,25 @@
 package com.ignitrondev.auralis.domain.model
 
 /**
- * A playable track, independent of the provider it comes from.
+ * A playable track from a streaming catalog.
  *
- * @property id Stable Auralis-wide identifier.
- * @property sourceId Identifier of the provider that owns this track (for example "youtube").
- * @property mediaUri Direct media location when already known. Usually null for streaming
- * sources, where the playable stream is resolved just before playback.
+ * The playable stream is never part of the model: it is resolved by the provider just before
+ * playback, because stream URLs are short-lived (spec section 6.1).
+ *
+ * @property durationMs Null when the source does not say.
+ * @property isVideo True for music videos and uploads; false for audio tracks ("songs").
  */
 data class MusicTrack(
-    val id: String,
+    override val id: String,
+    override val sourceId: String,
     val title: String,
-    val artist: String?,
-    val album: String?,
-    val durationMs: Long,
+    val artists: List<ArtistRef>,
+    val album: AlbumRef?,
+    val durationMs: Long?,
     val artworkUri: String?,
-    val sourceId: String,
-    val mediaUri: String?,
-    val isFavorite: Boolean,
-)
+    val isVideo: Boolean = false,
+    val isExplicit: Boolean = false,
+) : CatalogItem {
+    /** Artist names joined for display, for example "Daft Punk, Pharrell Williams". */
+    val artistNames: String get() = artists.joinToString(", ") { it.name }
+}

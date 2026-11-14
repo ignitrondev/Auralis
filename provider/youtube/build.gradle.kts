@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.domain)
+    api(projects.provider.api)
 
     // InnerTubeX is wrapped by this module only (spec section 6.2): no InnerTubeX type may
     // appear outside :provider:youtube, so the library stays replaceable.

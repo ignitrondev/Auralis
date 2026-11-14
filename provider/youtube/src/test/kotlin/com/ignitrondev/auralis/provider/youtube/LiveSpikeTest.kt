@@ -52,7 +52,9 @@ class LiveSpikeTest {
             val artistId = search.findBrowseId("MUSIC_PAGE_TYPE_ARTIST")
             println("SPIKE search: videoId=$videoId album=$albumId artist=$artistId")
 
-            itx.browse(YouTubeClient.WEB_REMIX, browseId = "FEmusic_home").json("home")
+            val home = itx.browse(YouTubeClient.WEB_REMIX, browseId = "FEmusic_home").json("home")
+            val explore = itx.browse(YouTubeClient.WEB_REMIX, browseId = "FEmusic_explore").json("explore")
+            println("SPIKE explore sections: " + com.ignitrondev.auralis.provider.youtube.parser.FeedParser.parse(explore).map { "${it.title} (${it.items.size})" })
             albumId?.let { itx.browse(YouTubeClient.WEB_REMIX, browseId = it).json("album") }
             val artist = artistId?.let { itx.browse(YouTubeClient.WEB_REMIX, browseId = it).json("artist") }
             val playlistId = (artist ?: search).findBrowseId("MUSIC_PAGE_TYPE_PLAYLIST")
@@ -146,6 +148,24 @@ class LiveSpikeTest {
                 }.getOrElse { "error=$it" }
                 println("SPIKE player $name: $result")
             }
+        }
+    }
+
+    @Test
+    fun providerEndToEnd(): Unit = runBlocking {
+        assumeTrue("live spike disabled; run with -Plive", live)
+        YouTubeMusicProvider().use { provider ->
+            val home = provider.home()
+            println("SPIKE provider home: ${home.sections.map { "${it.title} (${it.items.size})" }}")
+            val results = provider.search("Daft Punk")
+            println("SPIKE provider search: top=${results.topResult?.id} tracks=${results.tracks.size} albums=${results.albums.size} artists=${results.artists.size} playlists=${results.playlists.size}")
+            val album = provider.album(results.albums.first().id)
+            println("SPIKE provider album: ${album.album.title} by ${album.album.artistNames}, ${album.tracks.size} tracks")
+            val artist = provider.artist(results.artists.first().id)
+            println("SPIKE provider artist: ${artist.artist.name}, top=${artist.topTracks.size}, sections=${artist.sections.map { it.title }}")
+            val playlist = provider.playlist(results.playlists.first().id)
+            println("SPIKE provider playlist: ${playlist.playlist.title}, ${playlist.tracks.size} tracks, more=${playlist.hasMore}")
+            check(home.sections.isNotEmpty() && !results.isEmpty && album.tracks.isNotEmpty() && playlist.tracks.isNotEmpty())
         }
     }
 
