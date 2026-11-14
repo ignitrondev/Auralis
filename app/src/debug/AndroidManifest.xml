@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Debug only: the playback diagnostics screen reports wifi vs mobile data. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- Debug builds only: design system gallery for checking components in both themes.
          Exported so it can be opened with:
          adb shell am start -n com.ignitrondev.auralis/.debug.DesignSystemGalleryActivity -->
@@ -9,6 +12,17 @@
             android:name=".debug.DesignSystemGalleryActivity"
             android:exported="true"
             android:label="Auralis design system" />
+        <!-- Debug builds only: playback diagnostics with its own launcher icon, so it can run
+             on mobile data without adb. -->
+        <activity
+            android:name=".debug.PlaybackDiagnosticsActivity"
+            android:exported="true"
+            android:label="Auralis Diagnostics">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
