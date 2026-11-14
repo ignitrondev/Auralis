@@ -96,6 +96,9 @@ internal fun List<JsonObject>.groupsBySeparator(): List<List<JsonObject>> {
 /** Artist links in runs; plain-text names (such as "Various Artists") are kept without an id. */
 internal fun List<JsonObject>.artistRefs(): List<ArtistRef> =
     filter { it.str("text").let { text -> text != null && text != " & " && text != ", " && text != SEPARATOR } }
+        // Rows for the searched artist's own songs omit the artist ("Song • 5:46"): never take a
+        // duration for a name.
+        .filterNot { it.str("text").orEmpty().trim().matches(durationPattern) }
         .mapNotNull { run ->
             val name = run.str("text") ?: return@mapNotNull null
             val target = run.obj("navigationEndpoint").browseTarget()

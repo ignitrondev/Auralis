@@ -169,6 +169,48 @@ class LiveSpikeTest {
         }
     }
 
+    @Test
+    fun searchRejectsFullDeviceTagButAcceptsMappedLocale(): Unit = runBlocking {
+        assumeTrue("live spike disabled; run with -Plive", live)
+        InnerTubeSession().use { session ->
+            session.innerTube.locale = com.metrolist.innertubex.models.YouTubeLocale(gl = "ID", hl = "en-ID")
+            val raw = runCatching { session.innerTube.search(YouTubeClient.WEB_REMIX, query = "daft punk").status.value.toString() }
+                .getOrElse { it.message ?: it.toString() }
+            session.innerTube.locale = youTubeLocaleFor(java.util.Locale.forLanguageTag("en-ID"))
+            val mapped = session.innerTube.search(YouTubeClient.WEB_REMIX, query = "daft punk").status.value
+            println("SPIKE locale: hl=en-ID -> HTTP $raw, mapped hl=${session.innerTube.locale.hl} -> HTTP $mapped")
+            check(mapped == 200)
+        }
+    }
+
+    @Test
+    fun dumpSearchRows(): Unit = runBlocking {
+        assumeTrue("live spike disabled; run with -Plive", live)
+        InnerTubeSession().use { session ->
+            val root = session.innerTube.search(YouTubeClient.WEB_REMIX, query = "daft punk").json("search_daftpunk")
+            fun walk(e: JsonElement) {
+                when (e) {
+                    is JsonObject -> {
+                        (e["musicResponsiveListItemRenderer"] as? JsonObject)?.let { item ->
+                            val cols = (item["flexColumns"] as JsonArray).map { col ->
+                                ((col.jsonObject["musicResponsiveListItemFlexColumnRenderer"]!!.jsonObject["text"] as? JsonObject)?.get("runs") as? JsonArray)
+                                    ?.joinToString("|") { r -> r.jsonObject["text"]!!.jsonPrimitive.content + (if (r.jsonObject.containsKey("navigationEndpoint")) "*" else "") } ?: "-"
+                            }
+                            println("SPIKE row: $cols")
+                        }
+                        (e["musicCardShelfRenderer"] as? JsonObject)?.let { card ->
+                            println("SPIKE card subtitle: " + (card["subtitle"]?.jsonObject?.get("runs") as? JsonArray)?.joinToString("|") { it.jsonObject["text"]!!.jsonPrimitive.content })
+                        }
+                        e.values.forEach(::walk)
+                    }
+                    is JsonArray -> e.forEach(::walk)
+                    else -> Unit
+                }
+            }
+            walk(root)
+        }
+    }
+
     private class StopSpike : RuntimeException()
 
     private suspend fun HttpResponse.json(name: String): JsonObject {

@@ -3,8 +3,11 @@
  */
 package com.ignitrondev.auralis.core.designsystem.component
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,6 +18,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -39,7 +43,7 @@ fun GlassSearchBar(
     onSearch: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester = FocusRequester(),
+    focusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     val colors = AuralisTheme.colors
     val spacing = AuralisTheme.spacing
@@ -51,7 +55,13 @@ fun GlassSearchBar(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                // The whole capsule is the touch target, not just the line of text.
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClickLabel = placeholder,
+                ) { focusRequester.requestFocus() }
                 .padding(start = spacing.lg, end = spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
