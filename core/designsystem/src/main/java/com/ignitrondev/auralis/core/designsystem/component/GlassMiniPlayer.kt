@@ -49,7 +49,8 @@ private val ProgressStroke = 2.dp
  *
  * @param progress Playback progress from 0 to 1. It is a lambda read only while drawing, so
  * position updates repaint the progress line without recomposing the player.
- * @param onClick Opens the Now Playing screen.
+ * @param onClick Opens the Now Playing screen; null when there is nowhere to go yet (the player
+ * then has no click semantics, so it never looks like a control that does nothing).
  * @param onNextClick Shows a next-track button when not null.
  * @param artwork Album artwork. Defaults to the neutral gradient used when there is no artwork.
  */
@@ -60,7 +61,7 @@ fun GlassMiniPlayer(
     isPlaying: Boolean,
     progress: () -> Float,
     onPlayPauseClick: () -> Unit,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     onNextClick: (() -> Unit)? = null,
     artwork: @Composable () -> Unit = { ArtworkFallback() },
@@ -80,12 +81,18 @@ fun GlassMiniPlayer(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = ripple(color = colors.contentPrimary),
-                    role = Role.Button,
-                    onClickLabel = openLabel,
-                    onClick = onClick,
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(
+                            interactionSource = interactionSource,
+                            indication = ripple(color = colors.contentPrimary),
+                            role = Role.Button,
+                            onClickLabel = openLabel,
+                            onClick = onClick,
+                        )
+                    } else {
+                        Modifier
+                    },
                 )
                 .progressLine(progress)
                 .padding(start = spacing.sm + spacing.xxs, end = spacing.xs),
