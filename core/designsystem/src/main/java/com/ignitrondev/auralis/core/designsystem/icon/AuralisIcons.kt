@@ -43,6 +43,16 @@ object AuralisIcons {
     val Add: ImageVector = Icons.Rounded.Add
     val Saved: ImageVector = Icons.Rounded.Check
 
+    /** Arrow into a tray. Not in material-icons-core, so it is drawn here. */
+    val Download: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.Download",
+            pathData = "M16.59,9H15V4c0,-0.55 -0.45,-1 -1,-1h-4c-0.55,0 -1,0.45 -1,1v5H7.41c-0.89,0 -1.34,1.08 -0.71,1.71" +
+                "l4.59,4.59c0.39,0.39 1.02,0.39 1.41,0l4.59,-4.59c0.63,-0.63 0.19,-1.71 -0.7,-1.71z" +
+                "M5,19c0,0.55 0.45,1 1,1h12c0.55,0 1,-0.45 1,-1s-0.45,-1 -1,-1H6c-0.55,0 -1,0.45 -1,1z",
+        )
+    }
+
     /** Two rounded bars. Not in material-icons-core, so it is drawn here. */
     val Pause: ImageVector by lazy {
         roundedIcon(

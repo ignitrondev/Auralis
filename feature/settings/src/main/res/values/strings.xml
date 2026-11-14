@@ -12,4 +12,11 @@
     <string name="feature_settings_privacy">Your session is stored encrypted on this device only and is removed when you sign out.</string>
     <string name="feature_settings_updates">Updates</string>
     <string name="feature_settings_check_for_updates">Check for updates</string>
+    <string name="feature_settings_installed_version">Auralis %1$s</string>
+    <string name="feature_settings_checking_updates">Checking for updates…</string>
+    <string name="feature_settings_up_to_date">You have the latest version.</string>
+    <string name="feature_settings_update_available">Auralis %1$s is available.</string>
+    <string name="feature_settings_update_failed">Couldn\'t check for updates. Check your connection and try again.</string>
+    <string name="feature_settings_download_update">Download update</string>
+    <string name="feature_settings_release_notes">What\'s new</string>
 </resources>

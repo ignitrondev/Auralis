@@ -11,6 +11,9 @@ dependencies {
     api(projects.domain)
     implementation(projects.provider.api)
     implementation(projects.core.database)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.kotlinx.coroutines.test)
 }
