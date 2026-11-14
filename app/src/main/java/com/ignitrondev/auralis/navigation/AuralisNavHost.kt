@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.ignitrondev.auralis.core.ui.CatalogActions
+import com.ignitrondev.auralis.domain.player.PlayerController
 import com.ignitrondev.auralis.feature.browse.navigation.browseScreens
 import com.ignitrondev.auralis.feature.browse.navigation.navigateToAlbum
 import com.ignitrondev.auralis.feature.browse.navigation.navigateToArtist
@@ -23,14 +24,17 @@ import com.ignitrondev.auralis.feature.settings.navigation.settingsScreen
 @Composable
 fun AuralisNavHost(
     navController: NavHostController,
+    player: PlayerController,
     modifier: Modifier = Modifier,
 ) {
     // Feature modules never depend on each other: the app tells them where items lead.
-    val actions = remember(navController) {
+    val actions = remember(navController, player) {
         CatalogActions(
             openAlbum = navController::navigateToAlbum,
             openArtist = navController::navigateToArtist,
             openPlaylist = navController::navigateToPlaylist,
+            // A tapped track plays with the list it was in as the queue.
+            playTrack = { track, queue -> player.play(queue, queue.indexOf(track).coerceAtLeast(0)) },
         )
     }
     NavHost(

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Auralis</string>
+    <string name="playback_error_sign_in">YouTube asks you to sign in. Tap to sign in.</string>
+    <string name="playback_error_network">Can\'t reach YouTube Music. Tap to try again.</string>
+    <string name="playback_error_unavailable">This track can\'t be played.</string>
+    <string name="playback_error_unknown">Playback stopped. Tap to try again.</string>
 </resources>

@@ -5,6 +5,16 @@ package com.ignitrondev.auralis.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ignitrondev.auralis.R
+import com.ignitrondev.auralis.core.designsystem.component.Artwork
+import com.ignitrondev.auralis.core.designsystem.component.GlassMiniPlayer
+import com.ignitrondev.auralis.domain.player.PlaybackError
+import com.ignitrondev.auralis.feature.settings.navigation.navigateToSignIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -39,7 +49,14 @@ import com.ignitrondev.auralis.navigation.TopLevelDestination
 fun AuralisApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    appViewModel: AppViewModel = hiltViewModel(),
 ) {
+    val player = appViewModel.player
+    val playerState by player.state.collectAsStateWithLifecycle()
+    val track = playerState.currentTrack
+    val spacing = AuralisTheme.spacing
+    val barPadding = glassNavigationBarPadding()
+    val chromePadding = if (track != null) barPadding + MiniPlayerHeight + spacing.sm else barPadding
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
     // Detail and sign-in pages are not tabs: keep the tab they were opened from selected.
     var selectedTab by rememberSaveable { mutableStateOf(TopLevelDestination.HOME) }
@@ -50,6 +67,31 @@ fun AuralisApp(
             .fillMaxSize()
             .background(AuralisTheme.colors.background),
         overlay = {
+            if (track != null) {
+                val error = playerState.error
+                GlassMiniPlayer(
+                    title = track.title,
+                    artist = error?.let { playbackErrorText(it) } ?: track.artistNames.ifBlank { null },
+                    isPlaying = playerState.isPlaying,
+                    progress = {
+                        val duration = playerState.durationMs
+                        if (duration > 0) playerState.positionMs.toFloat() / duration else 0f
+                    },
+                    onPlayPauseClick = player::togglePlayPause,
+                    onClick = when (error) {
+                        PlaybackError.SignInRequired -> { { navController.navigateToSignIn() } }
+                        PlaybackError.Network, PlaybackError.Unknown -> player::retry
+                        // Now Playing arrives in Phase 5; until then the player has no tap action.
+                        else -> null
+                    },
+                    onNextClick = if (playerState.currentIndex < playerState.queue.lastIndex) player::next else null,
+                    artwork = { Artwork(uri = track.artworkUri, contentDescription = null, shape = CircleShape) },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = spacing.lg)
+                        .padding(bottom = barPadding + spacing.xs),
+                )
+            }
             GlassNavigationBar(modifier = Modifier.align(Alignment.BottomCenter)) {
                 TopLevelDestination.entries.forEach { destination ->
                     GlassNavigationBarItem(
@@ -62,14 +104,27 @@ fun AuralisApp(
             }
         },
     ) {
-        CompositionLocalProvider(LocalBottomChromePadding provides glassNavigationBarPadding()) {
+        CompositionLocalProvider(LocalBottomChromePadding provides chromePadding) {
             AuralisNavHost(
                 navController = navController,
+                player = player,
                 modifier = Modifier.fillMaxSize(),
             )
         }
     }
 }
+
+private val MiniPlayerHeight = 64.dp
+
+@Composable
+private fun playbackErrorText(error: PlaybackError): String = stringResource(
+    when (error) {
+        PlaybackError.SignInRequired -> R.string.playback_error_sign_in
+        PlaybackError.Network -> R.string.playback_error_network
+        PlaybackError.Unavailable -> R.string.playback_error_unavailable
+        PlaybackError.Unknown -> R.string.playback_error_unknown
+    },
+)
 
 private fun NavDestination?.isInHierarchy(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { it.hasRoute(destination.route::class) } == true

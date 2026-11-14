@@ -31,6 +31,7 @@ dependencies {
     implementation(projects.core.auth)
     implementation(projects.core.designsystem)
     implementation(projects.data)
+    implementation(projects.playback)
     implementation(projects.provider.youtube)
     implementation(projects.provider.botguard)
     implementation(projects.core.ui)
@@ -42,6 +43,9 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

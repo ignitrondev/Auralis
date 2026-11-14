@@ -148,7 +148,9 @@ class YouTubeMusicProvider internal constructor(
                 StreamResolveException.Reason.EXPLICIT_UNSUPPORTED,
                 StreamResolveException.Reason.NO_MUSIC_VIDEO,
                 -> StreamException.Reason.Unavailable
-                else -> StreamException.Reason.NoStream
+                // Signed out, "no playable stream" means YouTube refused anonymous playback
+                // (LOGIN_REQUIRED for every client): signing in is the fix (spec 12.1).
+                else -> if (session.innerTube.hasSapCookieAuth()) StreamException.Reason.NoStream else StreamException.Reason.Blocked
             }
             throw StreamException(reason, "stream: ${error.reason}", error)
         } catch (error: IOException) {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application>
+        <!-- The only playback engine (spec 7.2). Media3 shows the notification and lock-screen
+             controls from its MediaSession. Exported so system media controls, Bluetooth and
+             Android Auto can connect, as Media3 requires; the session decides what they may do. -->
+        <service
+            android:name=".PlaybackService"
+            android:exported="true"
+            tools:ignore="ExportedService"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>
