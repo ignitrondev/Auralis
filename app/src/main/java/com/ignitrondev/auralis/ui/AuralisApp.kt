@@ -3,13 +3,11 @@
  */
 package com.ignitrondev.auralis.ui
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination
@@ -20,14 +18,18 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
+import com.ignitrondev.auralis.core.designsystem.component.GlassLayers
+import com.ignitrondev.auralis.core.designsystem.component.GlassNavigationBar
+import com.ignitrondev.auralis.core.designsystem.component.GlassNavigationBarItem
+import com.ignitrondev.auralis.core.designsystem.component.LocalBottomChromePadding
+import com.ignitrondev.auralis.core.designsystem.component.glassNavigationBarPadding
+import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
 import com.ignitrondev.auralis.navigation.AuralisNavHost
 import com.ignitrondev.auralis.navigation.TopLevelDestination
 
 /**
- * App shell: bottom navigation plus the navigation host.
- *
- * The plain Material NavigationBar is temporary. Phase 2 replaces it with the floating
- * GlassNavigationBar from the design system.
+ * App shell: screens fill the window and the floating glass navigation bar sits over their
+ * bottom edge, blurring whatever scrolls underneath.
  */
 @Composable
 fun AuralisApp(
@@ -36,26 +38,29 @@ fun AuralisApp(
 ) {
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
 
-    Scaffold(
-        modifier = modifier,
-        bottomBar = {
-            NavigationBar {
+    GlassLayers(
+        modifier = modifier
+            .fillMaxSize()
+            .background(AuralisTheme.colors.background),
+        overlay = {
+            GlassNavigationBar(modifier = Modifier.align(Alignment.BottomCenter)) {
                 TopLevelDestination.entries.forEach { destination ->
-                    val label = stringResource(destination.labelRes)
-                    NavigationBarItem(
+                    GlassNavigationBarItem(
                         selected = currentDestination.isInHierarchy(destination),
                         onClick = { navController.navigateToTopLevel(destination) },
-                        icon = { Icon(imageVector = destination.icon, contentDescription = null) },
-                        label = { Text(label) },
+                        icon = destination.icon,
+                        label = stringResource(destination.labelRes),
                     )
                 }
             }
         },
-    ) { innerPadding ->
-        AuralisNavHost(
-            navController = navController,
-            modifier = Modifier.padding(innerPadding),
-        )
+    ) {
+        CompositionLocalProvider(LocalBottomChromePadding provides glassNavigationBarPadding()) {
+            AuralisNavHost(
+                navController = navController,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 

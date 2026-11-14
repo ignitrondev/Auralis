@@ -49,6 +49,8 @@ system font. The licenses are in `src/main/assets/licenses/` and listed in the r
 | `GlassCard` | Rounded glass container for grouped content. Optional `onClick` adds press scale, ripple and button semantics. |
 | `GlassButton` | Capsule button with a label and optional icon. |
 | `GlassIconButton` | Circular icon-only button. `contentDescription` is required. |
+| `GlassNavigationBar` + `GlassNavigationBarItem` | Floating capsule navigation bar. Goes in the `GlassLayers` overlay. The selected tab sits on a `selection` pill with a heavier label (no color change). Items have the `Tab` role. |
+| `LocalBottomChromePadding` | Bottom space covered by floating chrome (bar plus system inset). Scrolling screens add it to their bottom content padding so content scrolls under the glass but ends above it. |
 | `ScreenPlaceholder` | Temporary text-only body for screens that are not built yet. |
 
 ### Motion pattern
