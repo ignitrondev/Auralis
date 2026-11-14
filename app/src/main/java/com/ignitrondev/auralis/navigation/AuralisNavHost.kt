@@ -62,7 +62,7 @@ fun AuralisNavHost(
     ) {
         homeScreen(actions)
         searchScreen(actions)
-        libraryScreen()
+        libraryScreen(actions, onSignIn = navController::navigateToSignIn)
         settingsScreen(onSignIn = navController::navigateToSignIn, onSignInDone = { navController.popBackStack() })
         browseScreens(actions, onBack = { navController.popBackStack() })
         nowPlayingScreen(onCollapse = { navController.popBackStack() })

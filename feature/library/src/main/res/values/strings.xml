@@ -1,4 +1,7 @@
 <resources>
     <string name="feature_library_title">Library</string>
-    <string name="feature_library_placeholder">Your playlists, albums, artists and liked music will appear here.</string>
+    <string name="feature_library_recently_played">Recently played</string>
+    <string name="feature_library_history_empty">Nothing played yet. Songs you play on YouTube Music show up here.</string>
+    <string name="feature_library_sign_in_message">Sign in to YouTube Music to see what you have been listening to, on any device.</string>
+    <string name="feature_library_sign_in">Sign in</string>
 </resources>

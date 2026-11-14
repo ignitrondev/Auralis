@@ -61,5 +61,6 @@ fun CatalogException.Reason.message(): String = stringResource(
         CatalogException.Reason.Network -> R.string.core_ui_error_network
         CatalogException.Reason.NotFound -> R.string.core_ui_error_not_found
         CatalogException.Reason.UnexpectedResponse -> R.string.core_ui_error_unexpected
+        CatalogException.Reason.SignInRequired -> R.string.core_ui_error_sign_in
     },
 )

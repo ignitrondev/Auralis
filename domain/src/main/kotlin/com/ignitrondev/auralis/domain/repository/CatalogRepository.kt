@@ -40,5 +40,8 @@ class CatalogException(
 
         /** The response could not be understood, usually after a change on the service side. */
         UnexpectedResponse,
+
+        /** The data belongs to an account: signed out, or the session no longer works. */
+        SignInRequired,
     }
 }
