@@ -227,7 +227,7 @@ internal object HistoryParser {
             .mapNotNull { it.renderer("musicShelfRenderer") }
         val sections = shelves.mapNotNull { shelf ->
             val tracks = shelf.arr("contents").objects()
-                .mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem() as? MusicTrack }
+                .mapNotNull { it.renderer("musicResponsiveListItemRenderer")?.responsiveListItem(unlinkedArtistGroup = 0) as? MusicTrack }
             tracks.takeIf { it.isNotEmpty() }?.let { HistorySection(shelf.obj("title").text(), it) }
         }
         return ListeningHistory(sections)

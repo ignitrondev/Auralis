@@ -42,7 +42,10 @@ class HistoryParserTest {
         assertTrue(video.isVideo)
         assertEquals(244_000L, video.durationMs)
 
-        assertEquals("the podcast episode is not a track", listOf("song00000A1"), history.sections[1].tracks.map { it.id })
+        val (uploaded, again) = history.sections[1].tracks
+        assertEquals("an uploader without a link is the first group, not the views", "Some Uploader", uploaded.artistNames)
+        assertEquals("the podcast episode is not a track", listOf("video0000C3", "song00000A1"), history.sections[1].tracks.map { it.id })
+        assertEquals("Tulus", again.artistNames)
     }
 
     @Test(expected = UnexpectedResponseException::class)

@@ -64,6 +64,22 @@
                         "musicResponsiveListItemRenderer": {
                           "flexColumns": [
                             { "musicResponsiveListItemFlexColumnRenderer": { "text": { "runs": [{
+                              "text": "Fan remix",
+                              "navigationEndpoint": { "watchEndpoint": { "videoId": "video0000C3", "watchEndpointMusicSupportedConfigs": { "watchEndpointMusicConfig": { "musicVideoType": "MUSIC_VIDEO_TYPE_UGC" } } } }
+                            }] } } },
+                            { "musicResponsiveListItemFlexColumnRenderer": { "text": { "runs": [
+                              { "text": "Some Uploader" },
+                              { "text": " • " },
+                              { "text": "90K views" }
+                            ] } } }
+                          ],
+                          "playlistItemData": { "videoId": "video0000C3" }
+                        }
+                      },
+                      {
+                        "musicResponsiveListItemRenderer": {
+                          "flexColumns": [
+                            { "musicResponsiveListItemFlexColumnRenderer": { "text": { "runs": [{
                               "text": "A podcast episode",
                               "navigationEndpoint": { "browseEndpoint": { "browseId": "MPEDepisode01", "browseEndpointContextSupportedConfigs": { "browseEndpointContextMusicConfig": { "pageType": "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_TRACK_PAGE" } } } }
                             }] } } }
