@@ -10,4 +10,6 @@
     <string name="feature_settings_signing_in">Checking your account…</string>
     <string name="feature_settings_sign_in_failed">Couldn\'t confirm that account. Try signing in again.</string>
     <string name="feature_settings_privacy">Your session is stored encrypted on this device only and is removed when you sign out.</string>
+    <string name="feature_settings_updates">Updates</string>
+    <string name="feature_settings_check_for_updates">Check for updates</string>
 </resources>

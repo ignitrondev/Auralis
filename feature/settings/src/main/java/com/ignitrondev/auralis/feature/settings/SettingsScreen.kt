@@ -3,6 +3,8 @@
  */
 package com.ignitrondev.auralis.feature.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -65,6 +68,16 @@ fun SettingsScreen(
         Text(stringResource(R.string.feature_settings_account), style = AuralisTheme.typography.sectionTitle, color = AuralisTheme.colors.contentPrimary)
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             AccountContent(state = state, onSignIn = onSignIn, onSignOut = viewModel::signOut)
+        }
+        Text(stringResource(R.string.feature_settings_updates), style = AuralisTheme.typography.sectionTitle, color = AuralisTheme.colors.contentPrimary)
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            val context = LocalContext.current
+            GlassButton(
+                text = stringResource(R.string.feature_settings_check_for_updates),
+                onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ignitrondev/Auralis/releases")))
+                },
+            )
         }
         Text(
             stringResource(R.string.feature_settings_privacy),

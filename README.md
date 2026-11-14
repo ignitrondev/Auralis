@@ -71,6 +71,8 @@ cd Auralis
 
 The debug APK is written to `app/build/outputs/apk/debug/`.
 
+Release tags build and publish signed APKs through GitHub Actions. See [Releasing Auralis](docs/releasing.md) for the one-time signing setup and how to build an existing tag.
+
 Optional: signed-out playback uses YouTube's BotGuard, which needs YouTube's web client key at
 build time. It is never committed. Put it in `local.properties` (git-ignored):
 

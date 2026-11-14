@@ -4,19 +4,46 @@ plugins {
     alias(libs.plugins.auralis.hilt)
 }
 
+val releaseStoreFile = providers.gradleProperty("auralisReleaseStoreFile")
+    .orElse(providers.environmentVariable("ANDROID_KEYSTORE_PATH"))
+    .orNull
+val releaseStorePassword = providers.gradleProperty("auralisReleaseStorePassword")
+    .orElse(providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD"))
+    .orNull
+val releaseKeyAlias = providers.gradleProperty("auralisReleaseKeyAlias")
+    .orElse(providers.environmentVariable("ANDROID_KEY_ALIAS"))
+    .orNull
+val releaseKeyPassword = providers.gradleProperty("auralisReleaseKeyPassword")
+    .orElse(providers.environmentVariable("ANDROID_KEY_PASSWORD"))
+    .orNull
+val releaseVersionCode = providers.gradleProperty("auralisVersionCode").orElse("1").get().toInt()
+val releaseVersionName = providers.gradleProperty("auralisVersionName").orElse("0.1.0").get()
+
 android {
     namespace = "com.ignitrondev.auralis"
 
+    signingConfigs {
+        create("release") {
+            if (!releaseStoreFile.isNullOrBlank()) {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.ignitrondev.auralis"
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = releaseVersionCode
+        versionName = releaseVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
