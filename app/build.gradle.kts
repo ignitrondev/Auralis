@@ -42,6 +42,12 @@ android {
     }
 
     buildTypes {
+        // Debug builds install next to the release app, so a release install (and its sign-in)
+        // never has to be removed to try a development build.
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
