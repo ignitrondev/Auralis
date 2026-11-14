@@ -51,6 +51,8 @@ class MediaPlayerController @Inject constructor(
 
     init {
         scope.launch { errors.current.collect { error -> _state.value = _state.value.copy(error = error) } }
+        // Connect right away: the service restores the last queue, and the mini player shows it.
+        scope.launch { connect() }
     }
 
     private fun withController(block: (MediaController) -> Unit) {
@@ -105,13 +107,7 @@ class MediaPlayerController @Inject constructor(
 
     override fun setShuffle(enabled: Boolean) = withController { it.shuffleModeEnabled = enabled }
 
-    override fun setRepeatMode(mode: RepeatMode) = withController {
-        it.repeatMode = when (mode) {
-            RepeatMode.OFF -> Player.REPEAT_MODE_OFF
-            RepeatMode.ONE -> Player.REPEAT_MODE_ONE
-            RepeatMode.ALL -> Player.REPEAT_MODE_ALL
-        }
-    }
+    override fun setRepeatMode(mode: RepeatMode) = withController { it.repeatMode = mode.toPlayer() }
 
     override fun retry() {
         errors.report(null)
@@ -135,11 +131,7 @@ class MediaPlayerController @Inject constructor(
             queue = queue,
             currentIndex = index,
             shuffleEnabled = player.shuffleModeEnabled,
-            repeatMode = when (player.repeatMode) {
-                Player.REPEAT_MODE_ONE -> RepeatMode.ONE
-                Player.REPEAT_MODE_ALL -> RepeatMode.ALL
-                else -> RepeatMode.OFF
-            },
+            repeatMode = player.repeatMode.toRepeatMode(),
             isBuffering = player.playbackState == Player.STATE_BUFFERING,
             error = errors.current.value,
         )

@@ -20,9 +20,12 @@ import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
 import androidx.media3.session.MediaSessionService
-import com.ignitrondev.auralis.domain.player.PlaybackError
+import com.ignitrondev.auralis.domain.repository.PlaybackSnapshotRepository
 import com.ignitrondev.auralis.provider.api.StreamException
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +37,8 @@ import javax.inject.Inject
 
 /**
  * Owns the one ExoPlayer and its MediaSession (spec section 7.2). Runs independently of the UI;
- * Media3 provides the notification, lock-screen controls and foreground handling.
+ * Media3 provides the notification, lock-screen controls and foreground handling. The queue is
+ * restored from the last session when the service starts ([QueuePersistence]).
  */
 @OptIn(UnstableApi::class)
 @AndroidEntryPoint
@@ -43,9 +47,11 @@ class PlaybackService : MediaSessionService() {
     @Inject lateinit var resolver: StreamResolver
     @Inject lateinit var errors: PlaybackErrors
     @Inject lateinit var ui: PlaybackUi
+    @Inject lateinit var snapshots: PlaybackSnapshotRepository
 
     private var session: MediaSession? = null
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var persistence: QueuePersistence? = null
     private var retriedTrackId: String? = null
 
     override fun onCreate() {
@@ -60,7 +66,12 @@ class PlaybackService : MediaSessionService() {
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
         player.addListener(PlayerEvents(player))
+        persistence = QueuePersistence(player, snapshots).also {
+            player.addListener(it)
+            it.restore()
+        }
         session = MediaSession.Builder(this, player)
+            .setCallback(SessionCallback())
             .setSessionActivity(ui.sessionActivity())
             .build()
     }
@@ -68,12 +79,15 @@ class PlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        persistence?.saveProgress()
         val player = session?.player
         if (player == null || !player.playWhenReady || player.mediaItemCount == 0) stopSelf()
     }
 
     override fun onDestroy() {
         scope.cancel()
+        persistence?.release()
+        persistence = null
         session?.run {
             player.release()
             release()
@@ -107,6 +121,32 @@ class PlaybackService : MediaSessionService() {
             .build()
     }
 
+    /** Lets the system media controls (and Bluetooth play) resume the last queue after the process ended. */
+    private inner class SessionCallback : MediaSession.Callback {
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            isForPlayback: Boolean,
+        ): ListenableFuture<MediaItemsWithStartPosition> {
+            val result = SettableFuture.create<MediaItemsWithStartPosition>()
+            scope.launch {
+                val snapshot = persistence?.load()
+                if (snapshot == null) {
+                    result.setException(UnsupportedOperationException("no saved queue"))
+                } else {
+                    result.set(
+                        MediaItemsWithStartPosition(
+                            snapshot.queue.map(MediaItems::toMediaItem),
+                            snapshot.currentIndex,
+                            snapshot.positionMs,
+                        ),
+                    )
+                }
+            }
+            return result
+        }
+    }
+
     private inner class PlayerEvents(private val player: ExoPlayer) : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             retriedTrackId = null
@@ -114,7 +154,7 @@ class PlaybackService : MediaSessionService() {
             // Resolve the next track ahead of time so it starts without waiting.
             val next = player.nextMediaItemIndex.takeIf { it != C.INDEX_UNSET } ?: return
             val nextId = player.getMediaItemAt(next).mediaId
-            scope.launch { resolver.prefetch(nextId) }
+            scope.launch(Dispatchers.IO) { resolver.prefetch(nextId) }
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
