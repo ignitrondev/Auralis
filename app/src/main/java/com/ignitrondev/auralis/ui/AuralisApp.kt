@@ -14,6 +14,8 @@ import com.ignitrondev.auralis.R
 import com.ignitrondev.auralis.core.designsystem.component.Artwork
 import com.ignitrondev.auralis.core.designsystem.component.GlassMiniPlayer
 import com.ignitrondev.auralis.domain.player.PlaybackError
+import com.ignitrondev.auralis.feature.player.navigation.NowPlayingRoute
+import com.ignitrondev.auralis.feature.player.navigation.navigateToNowPlaying
 import com.ignitrondev.auralis.feature.settings.navigation.navigateToSignIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -61,13 +63,17 @@ fun AuralisApp(
     // Detail and sign-in pages are not tabs: keep the tab they were opened from selected.
     var selectedTab by rememberSaveable { mutableStateOf(TopLevelDestination.HOME) }
     TopLevelDestination.entries.firstOrNull { currentDestination.isInHierarchy(it) }?.let { selectedTab = it }
+    // Now Playing is full screen: no floating bar or mini player over it. Visible entries (not the
+    // current destination) keep them hidden until the sheet has finished sliding away.
+    val visibleEntries by navController.visibleEntries.collectAsStateWithLifecycle()
+    val showChrome = visibleEntries.none { it.destination.hasRoute(NowPlayingRoute::class) }
 
     GlassLayers(
         modifier = modifier
             .fillMaxSize()
             .background(AuralisTheme.colors.background),
         overlay = {
-            if (track != null) {
+            if (track != null && showChrome) {
                 val error = playerState.error
                 GlassMiniPlayer(
                     title = track.title,
@@ -81,8 +87,7 @@ fun AuralisApp(
                     onClick = when (error) {
                         PlaybackError.SignInRequired -> { { navController.navigateToSignIn() } }
                         PlaybackError.Network, PlaybackError.Unknown -> player::retry
-                        // Now Playing arrives in Phase 5; until then the player has no tap action.
-                        else -> null
+                        else -> { { navController.navigateToNowPlaying() } }
                     },
                     onNextClick = if (playerState.currentIndex < playerState.queue.lastIndex) player::next else null,
                     artwork = { Artwork(uri = track.artworkUri, contentDescription = null, shape = CircleShape) },
@@ -92,7 +97,7 @@ fun AuralisApp(
                         .padding(bottom = barPadding + spacing.xs),
                 )
             }
-            GlassNavigationBar(modifier = Modifier.align(Alignment.BottomCenter)) {
+            if (showChrome) GlassNavigationBar(modifier = Modifier.align(Alignment.BottomCenter)) {
                 TopLevelDestination.entries.forEach { destination ->
                     GlassNavigationBarItem(
                         selected = destination == selectedTab,

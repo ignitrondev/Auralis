@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
@@ -28,6 +29,7 @@ object AuralisIcons {
     val Close: ImageVector = Icons.Rounded.Close
     val Back: ImageVector = Icons.AutoMirrored.Rounded.ArrowBack
     val Retry: ImageVector = Icons.Rounded.Refresh
+    val Collapse: ImageVector = Icons.Rounded.KeyboardArrowDown
 
     /** Two rounded bars. Not in material-icons-core, so it is drawn here. */
     val Pause: ImageVector by lazy {
@@ -35,6 +37,49 @@ object AuralisIcons {
             name = "Auralis.Pause",
             pathData = "M8,19c1.1,0 2,-0.9 2,-2V7c0,-1.1 -0.9,-2 -2,-2s-2,0.9 -2,2v10c0,1.1 0.9,2 2,2z" +
                 "M14,7v10c0,1.1 0.9,2 2,2s2,-0.9 2,-2V7c0,-1.1 -0.9,-2 -2,-2s-2,0.9 -2,2z",
+        )
+    }
+
+    /** Mirror of [SkipNext]. */
+    val SkipPrevious: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.SkipPrevious",
+            pathData = "M7,6c0.55,0 1,0.45 1,1v10c0,0.55 -0.45,1 -1,1s-1,-0.45 -1,-1V7c0,-0.55 0.45,-1 1,-1z" +
+                "M10.66,12.82l5.77,4.07c0.66,0.47 1.58,-0.01 1.58,-0.82V7.93c0,-0.81 -0.91,-1.28 -1.58,-0.82l-5.77,4.07" +
+                "c-0.57,0.4 -0.57,1.24 0,1.64z",
+        )
+    }
+
+    val Shuffle: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.Shuffle",
+            pathData = "M10.59,9.17L6.12,4.7c-0.39,-0.39 -1.02,-0.39 -1.41,0 -0.39,0.39 -0.39,1.02 0,1.41l4.46,4.46 1.42,-1.4z" +
+                "M15.35,4.85l1.19,1.19L4.7,17.88c-0.39,0.39 -0.39,1.02 0,1.41 0.39,0.39 1.02,0.39 1.41,0L17.96,7.46l1.19,1.19" +
+                "c0.31,0.31 0.85,0.09 0.85,-0.36V4.5c0,-0.28 -0.22,-0.5 -0.5,-0.5h-3.79c-0.45,0 -0.67,0.54 -0.36,0.85z" +
+                "M14.83,13.41l-1.41,1.41 3.13,3.13 -1.2,1.2c-0.31,0.31 -0.09,0.85 0.36,0.85h3.79c0.28,0 0.5,-0.22 0.5,-0.5" +
+                "v-3.79c0,-0.45 -0.54,-0.67 -0.85,-0.35l-1.19,1.19 -3.13,-3.14z",
+        )
+    }
+
+    val Repeat: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.Repeat",
+            pathData = "M7,7h10v1.79c0,0.45 0.54,0.67 0.85,0.35l2.79,-2.79c0.2,-0.2 0.2,-0.51 0,-0.71l-2.79,-2.79" +
+                "c-0.31,-0.31 -0.85,-0.09 -0.85,0.36V5H6c-0.55,0 -1,0.45 -1,1v4c0,0.55 0.45,1 1,1s1,-0.45 1,-1V7z" +
+                "M17,17H7v-1.79c0,-0.45 -0.54,-0.67 -0.85,-0.35l-2.79,2.79c-0.2,0.2 -0.2,0.51 0,0.71l2.79,2.79" +
+                "c0.31,0.31 0.85,0.09 0.85,-0.36V19h11c0.55,0 1,-0.45 1,-1v-4c0,-0.55 -0.45,-1 -1,-1s-1,0.45 -1,1v3z",
+        )
+    }
+
+    val RepeatOne: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.RepeatOne",
+            pathData = "M7,7h10v1.79c0,0.45 0.54,0.67 0.85,0.35l2.79,-2.79c0.2,-0.2 0.2,-0.51 0,-0.71l-2.79,-2.79" +
+                "c-0.31,-0.31 -0.85,-0.09 -0.85,0.36V5H6c-0.55,0 -1,0.45 -1,1v4c0,0.55 0.45,1 1,1s1,-0.45 1,-1V7z" +
+                "M17,17H7v-1.79c0,-0.45 -0.54,-0.67 -0.85,-0.35l-2.79,2.79c-0.2,0.2 -0.2,0.51 0,0.71l2.79,2.79" +
+                "c0.31,0.31 0.85,0.09 0.85,-0.36V19h11c0.55,0 1,-0.45 1,-1v-4c0,-0.55 -0.45,-1 -1,-1s-1,0.45 -1,1v3z" +
+                "M13,14.25V9.81c0,-0.45 -0.36,-0.81 -0.81,-0.81 -0.13,0 -0.25,0.03 -0.36,0.09l-1.42,0.71" +
+                "c-0.25,0.12 -0.41,0.38 -0.41,0.66 0,0.41 0.33,0.74 0.74,0.74h0.76v3.05c0,0.41 0.34,0.75 0.75,0.75s0.75,-0.34 0.75,-0.75z",
         )
     }
 

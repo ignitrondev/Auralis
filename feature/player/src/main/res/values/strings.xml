@@ -1,0 +1,15 @@
+<resources>
+    <string name="feature_player_now_playing">Now playing</string>
+    <string name="feature_player_collapse">Close player</string>
+    <string name="feature_player_play">Play</string>
+    <string name="feature_player_pause">Pause</string>
+    <string name="feature_player_next">Next track</string>
+    <string name="feature_player_previous">Previous track</string>
+    <string name="feature_player_shuffle">Shuffle</string>
+    <string name="feature_player_repeat_off">Repeat off</string>
+    <string name="feature_player_repeat_all">Repeat all</string>
+    <string name="feature_player_repeat_one">Repeat one</string>
+    <string name="feature_player_seek">Playback position</string>
+    <string name="feature_player_artwork">Album artwork</string>
+    <string name="feature_player_nothing">Nothing is playing.</string>
+</resources>
