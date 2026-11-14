@@ -13,8 +13,8 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * Mints YouTube BotGuard proof-of-origin tokens for an identifier (a visitor id or a video id).
- * Signed-out playback needs them (docs/spikes/innertubex.md). On Android it is implemented with
- * a hidden WebView that runs Google's own BotGuard script.
+ * Signed-out playback may need them when YouTube requests BotGuard attestation. On Android it is
+ * implemented with a hidden WebView that runs Google's own BotGuard script.
  *
  * Tokens are sensitive: implementations never log or persist them.
  */

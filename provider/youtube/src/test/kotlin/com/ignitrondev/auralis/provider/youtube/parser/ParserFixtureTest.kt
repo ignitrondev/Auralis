@@ -16,7 +16,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Parses responses recorded from YouTube Music on 2026-11-14 (see docs/spikes/innertubex.md). */
+/** Parses response fixtures recorded from YouTube Music on 2026-11-14. */
 class ParserFixtureTest {
 
     private fun fixture(name: String): JsonObject {
