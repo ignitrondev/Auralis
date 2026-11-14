@@ -24,7 +24,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -191,7 +195,10 @@ private fun Modifier.sharedContainer(
     )
 }
 
-/** The artwork moves and scales from the mini player into its place in Now Playing. */
+/**
+ * The artwork moves and scales from the mini player into its place in Now Playing. It is not
+ * clipped by the growing container: it travels ahead of it, and a clip would show only a slice.
+ */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun Modifier.sharedArtwork(shared: SharedTransitionScope, visibility: AnimatedVisibilityScope): Modifier =
@@ -200,8 +207,19 @@ private fun Modifier.sharedArtwork(shared: SharedTransitionScope, visibility: An
             sharedContentState = rememberSharedContentState(SHARED_ARTWORK),
             animatedVisibilityScope = visibility,
             boundsTransform = AuralisTheme.motion.sharedBounds,
+            clipInOverlayDuringTransition = NoOverlayClip,
         )
     }
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+private object NoOverlayClip : SharedTransitionScope.OverlayClip {
+    override fun getClipPath(
+        sharedContentState: SharedTransitionScope.SharedContentState,
+        bounds: Rect,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Path? = null
+}
 
 private const val SHARED_PLAYER = "player"
 private const val SHARED_ARTWORK = "player-artwork"
