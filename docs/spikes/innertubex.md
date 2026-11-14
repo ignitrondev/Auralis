@@ -31,6 +31,11 @@ itself and maps them to domain models inside `:provider:youtube`.
 InnerTubeX requires the caller's `HttpClient` to install `ContentNegotiation` (JSON) and to
 disable redirects (the library follows them itself).
 
+Home feed paging: the signed-out home feed returns only a few shelves, and its
+`nextContinuationData` token must be sent as a `ctoken` query parameter. InnerTubeX sends browse
+continuations in the request body, which returns an empty page. Auralis therefore builds Home
+from the home feed plus the explore page (`FEmusic_explore`: new albums, trending, new videos).
+
 ## Playback: blocked without a PO token or a session
 
 `/player` for a public song (`dX3k_QDnzHE`, signed out, home network):
@@ -61,4 +66,4 @@ Metrolist, the reference consumer, plays music with:
 3. **Wait for upstream**: re-run the spike on new InnerTubeX/QuackJS releases. The catalog
    work (Phase 3) does not depend on playback and can continue.
 
-The decision is recorded in the PR that follows this spike.
+**Decision (2026-11-14): option 1, a WebView BotGuard PO-token provider**, built in Phase 4.
