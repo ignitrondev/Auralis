@@ -4,102 +4,144 @@
 package com.ignitrondev.auralis.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 
-// Placeholder monochrome scheme (spec section 8.2.1). Every Material 3 color role is set to a
-// neutral value, so the default baseline purple never leaks into components such as
-// NavigationBar (which reads surfaceContainer and secondaryContainer). Errors are neutral too:
-// the spec signals errors with icon plus text, not red. Dynamic color is intentionally not used.
-// Replaced by the Liquid Glass design system tokens in Phase 2.
-private val DarkColors = darkColorScheme(
-    primary = Color.White,
-    onPrimary = Color.Black,
-    primaryContainer = Color(0xFF2A2A2A),
-    onPrimaryContainer = Color.White,
-    inversePrimary = Color.Black,
-    secondary = Color(0xFFBDBDBD),
-    onSecondary = Color.Black,
-    secondaryContainer = Color(0xFF2E2E2E),
-    onSecondaryContainer = Color.White,
-    tertiary = Color(0xFFBDBDBD),
-    onTertiary = Color.Black,
-    tertiaryContainer = Color(0xFF2E2E2E),
-    onTertiaryContainer = Color.White,
-    background = Color(0xFF0B0B0B),
-    onBackground = Color.White,
-    surface = Color(0xFF0B0B0B),
-    onSurface = Color.White,
-    surfaceVariant = Color(0xFF1C1C1C),
-    onSurfaceVariant = Color(0xFFBDBDBD),
-    surfaceTint = Color.White,
-    inverseSurface = Color(0xFFEDEDED),
-    inverseOnSurface = Color(0xFF0B0B0B),
-    error = Color.White,
-    onError = Color.Black,
-    errorContainer = Color(0xFF2E2E2E),
-    onErrorContainer = Color.White,
-    outline = Color(0xFF5C5C5C),
-    outlineVariant = Color(0xFF2E2E2E),
-    scrim = Color.Black,
-    surfaceBright = Color(0xFF2A2A2A),
-    surfaceDim = Color(0xFF0B0B0B),
-    surfaceContainerLowest = Color(0xFF080808),
-    surfaceContainerLow = Color(0xFF121212),
-    surfaceContainer = Color(0xFF161616),
-    surfaceContainerHigh = Color(0xFF1C1C1C),
-    surfaceContainerHighest = Color(0xFF242424),
-)
-
-private val LightColors = lightColorScheme(
-    primary = Color.Black,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFDADADA),
-    onPrimaryContainer = Color.Black,
-    inversePrimary = Color.White,
-    secondary = Color(0xFF424242),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFD6D6D6),
-    onSecondaryContainer = Color.Black,
-    tertiary = Color(0xFF424242),
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD6D6D6),
-    onTertiaryContainer = Color.Black,
-    background = Color(0xFFF5F5F5),
-    onBackground = Color.Black,
-    surface = Color(0xFFF5F5F5),
-    onSurface = Color.Black,
-    surfaceVariant = Color(0xFFE6E6E6),
-    onSurfaceVariant = Color(0xFF424242),
-    surfaceTint = Color.Black,
-    inverseSurface = Color(0xFF1C1C1C),
-    inverseOnSurface = Color(0xFFF5F5F5),
-    error = Color.Black,
-    onError = Color.White,
-    errorContainer = Color(0xFFD6D6D6),
-    onErrorContainer = Color.Black,
-    outline = Color(0xFF9E9E9E),
-    outlineVariant = Color(0xFFD0D0D0),
-    scrim = Color.Black,
-    surfaceBright = Color(0xFFFAFAFA),
-    surfaceDim = Color(0xFFDCDCDC),
-    surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF0F0F0),
-    surfaceContainer = Color(0xFFEBEBEB),
-    surfaceContainerHigh = Color(0xFFE5E5E5),
-    surfaceContainerHighest = Color(0xFFDFDFDF),
-)
-
+/**
+ * Root theme for Auralis. Provides the Auralis tokens and a Material 3 theme built from them,
+ * so Material components also stay neutral. Dynamic (wallpaper) color is never used.
+ *
+ * @param themeMode Dark by default. Settings will let the user pick Light or System.
+ */
 @Composable
 fun AuralisTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.Dark,
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        content = content,
+    val dark = when (themeMode) {
+        ThemeMode.Dark -> true
+        ThemeMode.Light -> false
+        ThemeMode.System -> isSystemInDarkTheme()
+    }
+    val colors = if (dark) DarkAuralisColors else LightAuralisColors
+    val reducedMotion = rememberReducedMotion()
+    val motion = remember(reducedMotion) { AuralisMotion(reducedMotion) }
+    val colorScheme = remember(colors) { colors.toMaterialColorScheme() }
+
+    CompositionLocalProvider(
+        LocalAuralisColors provides colors,
+        LocalAuralisTypography provides DefaultAuralisTypography,
+        LocalAuralisShapes provides DefaultAuralisShapes,
+        LocalAuralisSpacing provides AuralisSpacing(),
+        LocalAuralisMotion provides motion,
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = DefaultAuralisTypography.toMaterialTypography(),
+            shapes = DefaultAuralisShapes.toMaterialShapes(),
+            content = content,
+        )
+    }
+}
+
+/** Access to the current Auralis tokens, for example `AuralisTheme.colors.contentPrimary`. */
+object AuralisTheme {
+    val colors: AuralisColors
+        @Composable @ReadOnlyComposable get() = LocalAuralisColors.current
+    val typography: AuralisTypography
+        @Composable @ReadOnlyComposable get() = LocalAuralisTypography.current
+    val shapes: AuralisShapes
+        @Composable @ReadOnlyComposable get() = LocalAuralisShapes.current
+    val spacing: AuralisSpacing
+        @Composable @ReadOnlyComposable get() = LocalAuralisSpacing.current
+    val motion: AuralisMotion
+        @Composable @ReadOnlyComposable get() = LocalAuralisMotion.current
+}
+
+/**
+ * Maps the Auralis tokens onto every Material 3 color role. Material expects opaque colors, so
+ * translucent tokens are composited over the ground first. Errors are neutral as well: the spec
+ * signals errors with an icon plus text, not with red.
+ */
+internal fun AuralisColors.toMaterialColorScheme(): ColorScheme {
+    val ground = background
+    val base = if (isDark) ground else surfaceSolid
+    fun tone(alpha: Float): Color = contentPrimary.copy(alpha = alpha).compositeOver(base)
+    val selected = selection.compositeOver(surfaceSolid)
+    val secondaryText = contentSecondary.compositeOver(ground)
+    val scheme = if (isDark) darkColorScheme() else lightColorScheme()
+    return scheme.copy(
+        primary = contentPrimary,
+        onPrimary = ground,
+        primaryContainer = selected,
+        onPrimaryContainer = contentPrimary,
+        inversePrimary = ground,
+        secondary = secondaryText,
+        onSecondary = ground,
+        secondaryContainer = selected,
+        onSecondaryContainer = contentPrimary,
+        tertiary = secondaryText,
+        onTertiary = ground,
+        tertiaryContainer = selected,
+        onTertiaryContainer = contentPrimary,
+        background = ground,
+        onBackground = contentPrimary,
+        surface = ground,
+        onSurface = contentPrimary,
+        surfaceVariant = surfaceSolid,
+        onSurfaceVariant = secondaryText,
+        surfaceTint = contentPrimary,
+        inverseSurface = contentPrimary,
+        inverseOnSurface = ground,
+        error = contentPrimary,
+        onError = ground,
+        errorContainer = selected,
+        onErrorContainer = contentPrimary,
+        outline = borderStrong.compositeOver(ground),
+        outlineVariant = borderSubtle.compositeOver(ground),
+        scrim = Color.Black,
+        surfaceBright = tone(0.14f),
+        surfaceDim = ground,
+        surfaceContainerLowest = if (isDark) ground else surfaceSolid,
+        surfaceContainerLow = tone(0.03f),
+        surfaceContainer = tone(0.05f),
+        surfaceContainerHigh = tone(0.08f),
+        surfaceContainerHighest = tone(0.11f),
     )
 }
+
+internal fun AuralisTypography.toMaterialTypography(): Typography = Typography(
+    displayLarge = wordmark.copy(fontSize = wordmark.fontSize * 1.6f, lineHeight = wordmark.lineHeight * 1.6f),
+    displayMedium = wordmark.copy(fontSize = wordmark.fontSize * 1.3f, lineHeight = wordmark.lineHeight * 1.3f),
+    displaySmall = wordmark,
+    headlineLarge = screenTitle,
+    headlineMedium = nowPlayingTitle,
+    headlineSmall = sectionTitle,
+    titleLarge = sectionTitle,
+    titleMedium = itemTitle,
+    titleSmall = label,
+    bodyLarge = body,
+    bodyMedium = itemSubtitle,
+    bodySmall = bodySmall,
+    labelLarge = label,
+    labelMedium = labelSmall,
+    labelSmall = labelSmall,
+)
+
+internal fun AuralisShapes.toMaterialShapes(): Shapes = Shapes(
+    extraSmall = small,
+    small = small,
+    medium = medium,
+    large = large,
+    extraLarge = extraLarge,
+)
