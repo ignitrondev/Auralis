@@ -11,6 +11,8 @@ android {
         applicationId = "com.ignitrondev.auralis"
         versionCode = 1
         versionName = "0.1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -28,6 +30,18 @@ android {
 dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.feature.home)
+    implementation(projects.feature.library)
+    implementation(projects.feature.search)
+    implementation(projects.feature.settings)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
+
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    // Pinned: the 3.5.0 pulled in by ui-test-junit4 calls InputManager.getInstance, which is gone on Android 17.
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

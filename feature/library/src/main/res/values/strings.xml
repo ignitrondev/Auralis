@@ -1,0 +1,4 @@
+<resources>
+    <string name="feature_library_title">Library</string>
+    <string name="feature_library_placeholder">Your playlists, albums, artists and liked music will appear here.</string>
+</resources>
