@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import com.ignitrondev.auralis.core.designsystem.component.GlassButton
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
 import com.ignitrondev.auralis.domain.auth.AuthRepository
+import com.ignitrondev.auralis.domain.repository.CatalogException
+import com.ignitrondev.auralis.domain.repository.LibraryRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.provider.api.StreamProvider
 import dagger.hilt.android.AndroidEntryPoint
@@ -45,6 +47,8 @@ class PlaybackDiagnosticsActivity : ComponentActivity() {
     @Inject lateinit var streams: StreamProvider
 
     @Inject lateinit var auth: AuthRepository
+
+    @Inject lateinit var library: LibraryRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -95,6 +99,13 @@ class PlaybackDiagnosticsActivity : ComponentActivity() {
         runCatching { streams.resolveStream(SAMPLE_VIDEO) }
             .onSuccess { log("stream: OK ${it.mimeType} (${System.currentTimeMillis() - resolveStart} ms)") }
             .onFailure { log("stream: FAILED ${it.message}") }
+        // Read only: reports the account's like status of the sample track, never changes it.
+        runCatching { library.isTrackLiked(SAMPLE_VIDEO) }
+            .onSuccess { log("like status: OK (liked = $it)") }
+            .onFailure { error ->
+                val reason = (error as? CatalogException)?.reason
+                log("like status: FAILED $reason ${error.message} / ${error.cause?.let { it::class.simpleName + ": " + it.message }}")
+            }
     }
 
     private fun networkType(): String = runCatching { activeNetworkType() }.getOrDefault("unknown")
