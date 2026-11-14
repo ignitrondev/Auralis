@@ -1,0 +1,4 @@
+<resources>
+    <string name="feature_search_title">Search</string>
+    <string name="feature_search_placeholder">Search for songs, albums, artists and playlists will appear here.</string>
+</resources>

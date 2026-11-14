@@ -8,16 +8,22 @@ import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.project
 
-/** Base setup for every feature module: Android library + Compose + design system. */
+/**
+ * Base setup for every feature module: Android library, Compose, the design system and
+ * type-safe Navigation Compose routes (kotlinx.serialization).
+ */
 class AndroidFeatureConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             apply(plugin = "auralis.android.library")
             apply(plugin = "auralis.android.compose")
+            apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
 
             dependencies {
                 add("implementation", project(":core:designsystem"))
                 add("implementation", libs.findLibrary("androidx-lifecycle-runtime-compose").get())
+                add("implementation", libs.findLibrary("androidx-navigation-compose").get())
+                add("implementation", libs.findLibrary("kotlinx-serialization-core").get())
             }
         }
     }

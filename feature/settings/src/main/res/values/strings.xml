@@ -1,0 +1,4 @@
+<resources>
+    <string name="feature_settings_title">Settings</string>
+    <string name="feature_settings_placeholder">Appearance, audio, account and diagnostics settings will appear here.</string>
+</resources>

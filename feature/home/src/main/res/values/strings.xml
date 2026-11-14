@@ -1,0 +1,4 @@
+<resources>
+    <string name="feature_home_title">Home</string>
+    <string name="feature_home_placeholder">Your YouTube Music home feed will appear here.</string>
+</resources>
