@@ -28,7 +28,9 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "Auralis"
 
 include(":app")
+include(":core:database")
 include(":core:designsystem")
+include(":data")
 include(":domain")
 include(":feature:home")
 include(":feature:library")

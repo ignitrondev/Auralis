@@ -22,6 +22,8 @@ import com.metrolist.innertubex.bodyAsTextLimited
 import com.metrolist.innertubex.models.YouTubeClient
 import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.SerializationException
@@ -98,7 +100,8 @@ class YouTubeMusicProvider internal constructor(
     /** Runs a catalog call and reports every failure as a [CatalogException] with a reason. */
     private suspend fun <T> request(operation: String, block: suspend () -> T): T =
         try {
-            block()
+            // Responses are large JSON documents: parse them off the caller's (often main) thread.
+            withContext(Dispatchers.Default) { block() }
         } catch (error: CancellationException) {
             throw error
         } catch (error: CatalogException) {

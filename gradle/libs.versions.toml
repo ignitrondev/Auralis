@@ -12,6 +12,7 @@ kotlinx-serialization = "1.12.0"
 kotlinx-coroutines = "1.11.0"
 innertubex = "v0.11.7"
 ktor = "3.6.0"
+room = "2.8.5"
 androidx-test-runner = "1.7.0"
 androidx-test-ext-junit = "1.3.0"
 androidx-test-espresso = "3.7.0"
@@ -48,9 +49,14 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidx-test-espresso" }
 backdrop = { group = "io.github.kyant0", name = "backdrop", version.ref = "backdrop" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 # Build-logic dependencies
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+room-gradle-plugin = { group = "androidx.room", name = "room-gradle-plugin", version.ref = "room" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 
 [plugins]
@@ -61,6 +67,7 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room", version.ref = "room" }
 
 # Convention plugins (build-logic)
 auralis-android-application = { id = "auralis.android.application" }
@@ -68,4 +75,5 @@ auralis-android-library = { id = "auralis.android.library" }
 auralis-android-compose = { id = "auralis.android.compose" }
 auralis-android-feature = { id = "auralis.android.feature" }
 auralis-hilt = { id = "auralis.hilt" }
+auralis-android-room = { id = "auralis.android.room" }
 auralis-jvm-library = { id = "auralis.jvm.library" }
