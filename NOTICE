@@ -27,5 +27,14 @@ used under its own license; their copyright and license notices are kept.
   Kotlin standard library                     Apache License 2.0
   kotlinx.serialization                       Apache License 2.0
   Dagger / Hilt                               Apache License 2.0
+  Inter typeface                              SIL Open Font License 1.1
+    Copyright 2020 The Inter Project Authors
+    (https://github.com/rsms/inter)
+  Space Grotesk typeface                      SIL Open Font License 1.1
+    Copyright 2020 The Space Grotesk Project Authors
+    (https://github.com/floriankarsten/space-grotesk)
+
+The full font licenses ship with the app in
+core/designsystem/src/main/assets/licenses/.
 
 This list is updated whenever a dependency, font or other asset is added.
