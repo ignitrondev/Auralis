@@ -65,6 +65,7 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(spacing.lg),
     ) {
         Text(stringResource(R.string.feature_settings_title), style = AuralisTheme.typography.screenTitle, color = AuralisTheme.colors.contentPrimary)
+        NowPlayingCard()
         Text(stringResource(R.string.feature_settings_account), style = AuralisTheme.typography.sectionTitle, color = AuralisTheme.colors.contentPrimary)
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             AccountContent(state = state, onSignIn = onSignIn, onSignOut = viewModel::signOut)

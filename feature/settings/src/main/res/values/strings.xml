@@ -20,4 +20,9 @@
     <string name="feature_settings_download_update">Download update</string>
     <string name="feature_settings_release_notes">What\'s new</string>
     <string name="feature_settings_update_auto_check">Auralis checks GitHub for a new version when it opens, at most twice a day. Nothing about you is sent.</string>
+    <string name="feature_settings_now_playing">Now playing</string>
+    <string name="feature_settings_previous_track">Previous track</string>
+    <string name="feature_settings_share_song">Share</string>
+    <string name="feature_settings_like_song">Like</string>
+    <string name="feature_settings_unlike_song">Remove like</string>
 </resources>
