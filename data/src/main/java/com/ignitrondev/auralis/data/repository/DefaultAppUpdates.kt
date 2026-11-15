@@ -9,6 +9,7 @@ import com.ignitrondev.auralis.domain.update.AppRelease
 import com.ignitrondev.auralis.domain.update.AppReleaseRepository
 import com.ignitrondev.auralis.domain.update.AppUpdates
 import com.ignitrondev.auralis.domain.update.AppVersion
+import com.ignitrondev.auralis.domain.update.ReleaseNote
 import com.ignitrondev.auralis.domain.update.findUpdate
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -91,16 +92,27 @@ private class PreferencesUpdateCheckStore(context: Context) : UpdateCheckStore {
         get() {
             val version = preferences.getString(KEY_VERSION, null)?.let(AppVersion::parse) ?: return null
             val page = preferences.getString(KEY_PAGE, null) ?: return null
-            return AppRelease(version, page, preferences.getString(KEY_APK, null))
+            return AppRelease(
+                version = version,
+                pageUrl = page,
+                apkUrl = preferences.getString(KEY_APK, null),
+                // One line per note; a heading starts with "# ".
+                notes = preferences.getString(KEY_NOTES, null)?.lines().orEmpty().filter { it.isNotEmpty() }.map { line ->
+                    if (line.startsWith(HEADING_MARK)) ReleaseNote(line.removePrefix(HEADING_MARK), isHeading = true) else ReleaseNote(line)
+                },
+                publishedAt = preferences.getString(KEY_PUBLISHED, null),
+            )
         }
         set(value) {
             val editor = preferences.edit()
             if (value == null) {
-                editor.remove(KEY_VERSION).remove(KEY_PAGE).remove(KEY_APK)
+                editor.remove(KEY_VERSION).remove(KEY_PAGE).remove(KEY_APK).remove(KEY_NOTES).remove(KEY_PUBLISHED)
             } else {
                 editor.putString(KEY_VERSION, value.version.toString())
                     .putString(KEY_PAGE, value.pageUrl)
                     .putString(KEY_APK, value.apkUrl)
+                    .putString(KEY_NOTES, value.notes.joinToString("\n") { if (it.isHeading) HEADING_MARK + it.text else it.text })
+                    .putString(KEY_PUBLISHED, value.publishedAt)
             }
             editor.apply()
         }
@@ -110,5 +122,8 @@ private class PreferencesUpdateCheckStore(context: Context) : UpdateCheckStore {
         const val KEY_VERSION = "update_version"
         const val KEY_PAGE = "update_page_url"
         const val KEY_APK = "update_apk_url"
+        const val KEY_NOTES = "update_notes"
+        const val HEADING_MARK = "# "
+        const val KEY_PUBLISHED = "update_published_at"
     }
 }
