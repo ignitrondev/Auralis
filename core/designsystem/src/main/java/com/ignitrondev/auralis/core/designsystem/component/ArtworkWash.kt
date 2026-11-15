@@ -34,10 +34,11 @@ import kotlinx.coroutines.withContext
 fun rememberArtworkWash(uri: String?): State<ImageBitmap?> {
     val context = LocalContext.current.applicationContext
     return produceState(initialValue = uri?.let(ArtworkWash::cached), uri) {
-        if (uri == null) {
-            value = null
-        } else if (value == null) {
-            value = ArtworkWash.load(context, uri)
+        // The state outlives a change of artwork, so it still holds the last one's wash here. That
+        // one stays up while the new one loads (no flash of the fallback), then gives way to it.
+        value = when (uri) {
+            null -> null
+            else -> ArtworkWash.cached(uri) ?: ArtworkWash.load(context, uri)
         }
     }
 }
