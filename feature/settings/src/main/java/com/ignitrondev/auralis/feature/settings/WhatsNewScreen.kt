@@ -3,6 +3,11 @@
  */
 package com.ignitrondev.auralis.feature.settings
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -65,19 +70,27 @@ fun WhatsNewScreen(onBack: () -> Unit, viewModel: WhatsNewViewModel = hiltViewMo
                 contentPadding = PaddingValues(
                     start = spacing.screenGutter,
                     end = spacing.screenGutter,
-                    top = top + BackButtonArea,
+                    top = top + spacing.lg,
                     bottom = LocalBottomChromePadding.current + spacing.xl,
                 ),
                 verticalArrangement = Arrangement.spacedBy(spacing.md),
             ) {
                 item(key = "title") {
-                    Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-                        Text(
-                            text = stringResource(R.string.feature_settings_release_notes),
-                            style = AuralisTheme.typography.screenTitle,
-                            color = AuralisTheme.colors.contentPrimary,
-                            modifier = Modifier.semantics { heading() },
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                        // The back button and the title share a row, as in the design.
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+                            GlassIconButton(
+                                icon = AuralisIcons.Back,
+                                contentDescription = stringResource(UiR.string.core_ui_back),
+                                onClick = onBack,
+                            )
+                            Text(
+                                text = stringResource(R.string.feature_settings_release_notes),
+                                style = AuralisTheme.typography.screenTitle,
+                                color = AuralisTheme.colors.contentPrimary,
+                                modifier = Modifier.semantics { heading() },
+                            )
+                        }
                         Text(
                             text = stringResource(R.string.feature_settings_whats_new_intro),
                             style = AuralisTheme.typography.bodySmall,
@@ -94,7 +107,9 @@ fun WhatsNewScreen(onBack: () -> Unit, viewModel: WhatsNewViewModel = hiltViewMo
                         )
                     }
                 }
-                items(current.entries, key = { it.version }) { entry -> EntryCard(entry) }
+                // The newest version that is newer than the installed one is the highlighted card.
+                val highlighted = current.entries.firstOrNull { it.status == ReleaseStatus.Newer }?.version
+                items(current.entries, key = { it.version }) { entry -> EntryCard(entry, highlighted = entry.version == highlighted) }
                 item(key = "footer") {
                     Text(
                         text = stringResource(R.string.feature_settings_whats_new_ignitetunes),
@@ -104,19 +119,12 @@ fun WhatsNewScreen(onBack: () -> Unit, viewModel: WhatsNewViewModel = hiltViewMo
                 }
             }
         }
-        GlassIconButton(
-            icon = AuralisIcons.Back,
-            contentDescription = stringResource(UiR.string.core_ui_back),
-            onClick = onBack,
-            modifier = Modifier
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(spacing.sm),
-        )
     }
 }
 
 @Composable
-private fun EntryCard(entry: ChangelogEntry) {
+private fun EntryCard(entry: ChangelogEntry, highlighted: Boolean) {
+    val context = LocalContext.current
     val colors = AuralisTheme.colors
     val spacing = AuralisTheme.spacing
     val date = entry.publishedAt?.let(::formatDate)
@@ -124,7 +132,12 @@ private fun EntryCard(entry: ChangelogEntry) {
         stringResource(if (entry.isPreRelease) R.string.feature_settings_whats_new_pre_release else R.string.feature_settings_whats_new_release),
         date,
     ).joinToString(" · ")
-    GlassCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            // The card to update to has a stronger edge than the rest.
+            .then(if (highlighted) Modifier.border(1.5.dp, colors.borderStrong, AuralisTheme.shapes.large) else Modifier),
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
                 Text(
@@ -159,6 +172,14 @@ private fun EntryCard(entry: ChangelogEntry) {
                     }
                 }
             }
+            if (highlighted && entry.downloadUrl != null) {
+                GlassButton(
+                    text = stringResource(R.string.feature_settings_download_update),
+                    icon = AuralisIcons.Download,
+                    onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(entry.downloadUrl))) },
+                    modifier = Modifier.padding(top = spacing.xs),
+                )
+            }
         }
     }
 }
@@ -174,16 +195,23 @@ private fun StatusChip(status: ReleaseStatus) {
         ReleaseStatus.Earlier -> return
     }
     val filled = status == ReleaseStatus.Newer
-    Text(
-        text = stringResource(label),
-        style = AuralisTheme.typography.labelSmall,
-        color = if (filled) colors.background else colors.contentPrimary,
+    Row(
         modifier = Modifier
             .clip(AuralisTheme.shapes.capsule)
             .background(if (filled) colors.contentPrimary else colors.selection)
             .border(1.dp, if (filled) colors.contentPrimary else colors.borderStrong, AuralisTheme.shapes.capsule)
             .padding(horizontal = spacing.md, vertical = spacing.xs),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs + spacing.xxs),
+    ) {
+        // The dot on Available echoes the dot on the Settings tab.
+        if (filled) Box(Modifier.size(6.dp).background(colors.background, CircleShape))
+        Text(
+            text = stringResource(label),
+            style = AuralisTheme.typography.labelSmall,
+            color = if (filled) colors.background else colors.contentPrimary,
+        )
+    }
 }
 
 /** An ISO instant as a short date in the user's language, or null when it cannot be read. */
@@ -191,4 +219,3 @@ private fun formatDate(iso: String): String? = runCatching {
     DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withZone(ZoneId.systemDefault()).format(Instant.parse(iso))
 }.getOrNull()
 
-private val BackButtonArea = 72.dp

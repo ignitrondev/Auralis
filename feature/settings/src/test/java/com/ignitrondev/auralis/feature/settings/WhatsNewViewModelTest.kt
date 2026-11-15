@@ -61,6 +61,7 @@ class WhatsNewViewModelTest {
         assertEquals(listOf(ReleaseStatus.Newer, ReleaseStatus.Installed, ReleaseStatus.Earlier, ReleaseStatus.Earlier), entries.map { it.status })
         assertEquals(listOf("Mini player grows", "Library"), entries[1].notes.map { it.text })
         assertEquals(true, entries[0].isPreRelease)
+        assertEquals("https://example.com/v2.0.0-beta.5.apk", entries[0].downloadUrl)
     }
 
     @Test

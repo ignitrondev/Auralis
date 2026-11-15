@@ -33,6 +33,7 @@ enum class ReleaseStatus {
  * One version in the changelog.
  *
  * @property publishedAt An ISO 8601 instant, formatted by the screen for the user's locale.
+ * @property downloadUrl The APK, shown as a button on the newest [ReleaseStatus.Newer] entry.
  */
 data class ChangelogEntry(
     val version: String,
@@ -40,6 +41,7 @@ data class ChangelogEntry(
     val isPreRelease: Boolean,
     val notes: List<ReleaseNote>,
     val status: ReleaseStatus,
+    val downloadUrl: String? = null,
 )
 
 sealed interface WhatsNewState {
@@ -82,6 +84,7 @@ class WhatsNewViewModel @Inject constructor(
                             publishedAt = release.publishedAt,
                             isPreRelease = release.version.isPreRelease,
                             notes = release.notes,
+                            downloadUrl = release.apkUrl,
                             status = when {
                                 release.version > installed -> ReleaseStatus.Newer
                                 release.version == installed -> ReleaseStatus.Installed
