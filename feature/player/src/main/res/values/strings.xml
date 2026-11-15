@@ -1,5 +1,4 @@
 <resources>
-    <string name="feature_player_now_playing">Now playing</string>
     <string name="feature_player_collapse">Close player</string>
     <string name="feature_player_play">Play</string>
     <string name="feature_player_pause">Pause</string>
@@ -15,5 +14,10 @@
     <string name="feature_player_share">Share</string>
     <string name="feature_player_like">Like</string>
     <string name="feature_player_unlike">Remove like</string>
+    <string name="feature_player_show_lyrics">Show lyrics</string>
+    <string name="feature_player_hide_lyrics">Hide lyrics</string>
+    <string name="feature_player_lyrics_unavailable">Lyrics aren\'t available for this song.</string>
+    <string name="feature_player_lyrics_failed">Couldn\'t load the lyrics.</string>
+    <string name="feature_player_lyrics_retry">Try again</string>
     <string name="feature_player_like_failed">Couldn\'t update your like. Try again.</string>
 </resources>

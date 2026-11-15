@@ -3,6 +3,7 @@
  */
 package com.ignitrondev.auralis.feature.player
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,6 +72,8 @@ fun NowPlayingScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val like by viewModel.like.collectAsStateWithLifecycle()
+    val showLyrics by viewModel.showLyrics.collectAsStateWithLifecycle()
+    val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
     // The account may have changed since the screen was last open (another device, another app).
     LaunchedEffect(Unit) { viewModel.refreshLike() }
     val track = state.currentTrack
@@ -102,18 +105,50 @@ fun NowPlayingScreen(
                     .padding(horizontal = spacing.screenGutter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                TopBar(onCollapse = onCollapse, like = like, onToggleLike = viewModel::toggleLike, onShare = { sharing = true })
-                Spacer(Modifier.weight(0.6f))
-                GlowingArtwork(
-                    uri = track.artworkUri,
-                    contentDescription = stringResource(R.string.feature_player_artwork),
-                    shape = AuralisTheme.shapes.large,
-                    modifier = artworkModifier
-                        .widthIn(max = 420.dp)
-                        .fillMaxWidth(0.86f)
-                        .aspectRatio(1f),
+                TopBar(
+                    onCollapse = onCollapse,
+                    like = like,
+                    onToggleLike = viewModel::toggleLike,
+                    showLyrics = showLyrics,
+                    onToggleLyrics = viewModel::toggleLyrics,
+                    onShare = { sharing = true },
                 )
-                Spacer(Modifier.weight(0.7f))
+                Spacer(Modifier.height(spacing.md))
+                // The artwork, or the lyrics in its place. Switching keeps playback as it is.
+                Crossfade(
+                    targetState = showLyrics,
+                    animationSpec = AuralisTheme.motion.fade(),
+                    label = "lyrics",
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                ) { lyricsShown ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (lyricsShown) {
+                            LyricsPanel(
+                                state = lyrics,
+                                positionMs = state.positionMs,
+                                onSeek = viewModel::seekTo,
+                                onRetry = viewModel::retryLyrics,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        } else {
+                            GlowingArtwork(
+                                uri = track.artworkUri,
+                                contentDescription = stringResource(R.string.feature_player_artwork),
+                                shape = AuralisTheme.shapes.large,
+                                modifier = artworkModifier
+                                    .widthIn(max = 420.dp)
+                                    .fillMaxWidth(0.86f)
+                                    .aspectRatio(1f),
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(spacing.lg))
                 Column(modifier = revealModifier, horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = track.title,
@@ -154,7 +189,14 @@ fun NowPlayingScreen(
 }
 
 @Composable
-private fun TopBar(onCollapse: () -> Unit, like: LikeUiState, onToggleLike: () -> Unit, onShare: () -> Unit) {
+private fun TopBar(
+    onCollapse: () -> Unit,
+    like: LikeUiState,
+    onToggleLike: () -> Unit,
+    showLyrics: Boolean,
+    onToggleLyrics: () -> Unit,
+    onShare: () -> Unit,
+) {
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = AuralisTheme.spacing.sm)) {
         GlassIconButton(
             icon = AuralisIcons.Collapse,
@@ -162,12 +204,7 @@ private fun TopBar(onCollapse: () -> Unit, like: LikeUiState, onToggleLike: () -
             onClick = onCollapse,
             modifier = Modifier.align(Alignment.CenterStart),
         )
-        Text(
-            text = stringResource(R.string.feature_player_now_playing),
-            style = AuralisTheme.typography.label,
-            color = AuralisTheme.colors.contentSecondary,
-            modifier = Modifier.align(Alignment.Center),
-        )
+        // No "Now playing" label: with Share, Lyrics and Like on the right it would collide with them.
         Row(
             modifier = Modifier.align(Alignment.CenterEnd),
             horizontalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.sm),
@@ -176,6 +213,13 @@ private fun TopBar(onCollapse: () -> Unit, like: LikeUiState, onToggleLike: () -
                 icon = AuralisIcons.Share,
                 contentDescription = stringResource(R.string.feature_player_share),
                 onClick = onShare,
+            )
+            // Lyrics on is shown by the button's selection fill, not by colour (spec 8.2.1).
+            GlassIconButton(
+                icon = AuralisIcons.Lyrics,
+                contentDescription = stringResource(if (showLyrics) R.string.feature_player_hide_lyrics else R.string.feature_player_show_lyrics),
+                onClick = onToggleLyrics,
+                selected = showLyrics,
             )
             if (like.visible) {
                 val liked = like.liked == true

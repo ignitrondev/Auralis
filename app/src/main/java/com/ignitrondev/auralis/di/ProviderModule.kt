@@ -8,6 +8,7 @@ import com.ignitrondev.auralis.domain.repository.ShareLinks
 import com.ignitrondev.auralis.provider.api.AccountLibraryProvider
 import com.ignitrondev.auralis.provider.api.AccountSessionProvider
 import com.ignitrondev.auralis.provider.api.CatalogProvider
+import com.ignitrondev.auralis.provider.api.LyricsProvider
 import com.ignitrondev.auralis.provider.api.StreamProvider
 import com.ignitrondev.auralis.provider.botguard.WebViewAttestationProvider
 import com.ignitrondev.auralis.provider.youtube.YouTubeMusicProvider
@@ -44,4 +45,7 @@ object ProviderModule {
 
     @Provides
     fun provideShareLinks(provider: YouTubeMusicProvider): ShareLinks = provider
+
+    @Provides
+    fun provideLyricsProvider(provider: YouTubeMusicProvider): LyricsProvider = provider
 }

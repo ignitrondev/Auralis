@@ -11,6 +11,7 @@ import com.ignitrondev.auralis.domain.model.MusicTrack
 import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.HomeFeed
 import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.Lyrics
 import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
@@ -20,6 +21,7 @@ import com.ignitrondev.auralis.domain.repository.ShareLinks
 import com.ignitrondev.auralis.provider.api.AccountLibraryProvider
 import com.ignitrondev.auralis.provider.api.AccountSessionProvider
 import com.ignitrondev.auralis.provider.api.CatalogProvider
+import com.ignitrondev.auralis.provider.api.LyricsProvider
 import com.ignitrondev.auralis.provider.api.ProviderAccount
 import com.ignitrondev.auralis.provider.api.ProviderSession
 import com.ignitrondev.auralis.provider.api.PlayableStream
@@ -31,6 +33,7 @@ import com.ignitrondev.auralis.provider.youtube.parser.FeedParser
 import com.ignitrondev.auralis.provider.youtube.parser.HistoryParser
 import com.ignitrondev.auralis.provider.youtube.parser.LibraryCollectionParser
 import com.ignitrondev.auralis.provider.youtube.parser.LikeStatusParser
+import com.ignitrondev.auralis.provider.youtube.parser.LyricsParser
 import com.ignitrondev.auralis.provider.youtube.parser.PlaylistParser
 import com.ignitrondev.auralis.provider.youtube.parser.SOURCE_ID
 import com.ignitrondev.auralis.provider.youtube.parser.SearchParser
@@ -65,7 +68,7 @@ import java.io.IOException
  */
 class YouTubeMusicProvider internal constructor(
     private val session: InnerTubeSession,
-) : CatalogProvider, StreamProvider, AccountSessionProvider, AccountLibraryProvider, ShareLinks, AutoCloseable {
+) : CatalogProvider, StreamProvider, AccountSessionProvider, AccountLibraryProvider, LyricsProvider, ShareLinks, AutoCloseable {
 
     /**
      * @param attestation Mints BotGuard tokens for signed-out playback. Without it the catalog
@@ -213,6 +216,24 @@ class YouTubeMusicProvider internal constructor(
     }
 
     /**
+     * Lyrics, timed when the source has timing. The lyrics page ID comes from the track's `next`
+     * response. The iOS music client returns timed lines (`timedLyricsModel`); when it fails, the
+     * web client still gives the plain text.
+     */
+    override suspend fun lyrics(trackId: String): Lyrics? = request("lyrics") {
+        val next = session.innerTube.next(MUSIC_CLIENT, videoId = trackId).toJson("lyrics")
+        val lyricsId = LyricsParser.lyricsBrowseId(next) ?: return@request null
+        val timed = try {
+            LyricsParser.parse(session.innerTube.browse(TIMED_LYRICS_CLIENT, browseId = lyricsId).toJson("lyrics"))
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            null
+        }
+        timed ?: LyricsParser.parse(browse(lyricsId))
+    }
+
+    /**
      * Resolves a direct audio URL for [trackId]. SABR and HLS are disabled: the player streams a
      * plain progressive URL, in byte-range chunks when the server requires it.
      */
@@ -336,6 +357,7 @@ class YouTubeMusicProvider internal constructor(
 
     private companion object {
         val MUSIC_CLIENT = YouTubeClient.WEB_REMIX
+        val TIMED_LYRICS_CLIENT = YouTubeClient.IOS_MUSIC
         const val HOME_BROWSE_ID = "FEmusic_home"
         const val EXPLORE_BROWSE_ID = "FEmusic_explore"
         const val HISTORY_BROWSE_ID = "FEmusic_history"
