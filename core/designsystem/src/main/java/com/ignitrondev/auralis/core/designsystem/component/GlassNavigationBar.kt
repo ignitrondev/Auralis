@@ -82,6 +82,7 @@ fun GlassNavigationBar(
                 .fillMaxWidth()
                 .height(BarHeight),
             shape = AuralisTheme.shapes.capsule,
+            style = GlassStyle.Floating,
         ) {
             Row(
                 modifier = Modifier

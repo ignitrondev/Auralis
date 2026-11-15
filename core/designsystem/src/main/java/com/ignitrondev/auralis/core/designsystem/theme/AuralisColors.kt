@@ -47,6 +47,14 @@ data class AuralisColors(
     val shadow: Color,
     /** Layer under glass that keeps text readable over busy artwork. */
     val scrim: Color,
+    /** White tint of floating glass (mini player, navigation bar): lighter than [surfaceGlass]. */
+    val surfaceGlassFloating: Color,
+    /** Scrim under floating glass: lighter than [scrim], because the white tint already softens what is behind. */
+    val scrimGlassFloating: Color,
+    /** Outline of floating glass. Clearer than [borderSubtle], because the glass is barely blurred. */
+    val borderGlassFloating: Color,
+    /** Light catching the top and left edges of floating glass, as in Liquid Glass. */
+    val edgeLight: Color,
     /** Top of the neutral gradient shown when there is no artwork. */
     val artworkFallbackTop: Color,
     /** Bottom of the neutral gradient shown when there is no artwork. */
@@ -69,6 +77,10 @@ internal val DarkAuralisColors = AuralisColors(
     highlight = Color.White.copy(alpha = 0.16f),
     shadow = Color.Black.copy(alpha = 0.40f),
     scrim = Color.Black.copy(alpha = 0.50f),
+    surfaceGlassFloating = Color.White.copy(alpha = 0.22f),
+    scrimGlassFloating = Color.Black.copy(alpha = 0.30f),
+    borderGlassFloating = Color.White.copy(alpha = 0.34f),
+    edgeLight = Color.White.copy(alpha = 0.85f),
     artworkFallbackTop = Color(0xFF2A2A2A),
     artworkFallbackBottom = Color(0xFF121212),
 )
@@ -93,6 +105,10 @@ internal val LightAuralisColors = AuralisColors(
     highlight = Color.White.copy(alpha = 0.70f),
     shadow = Color.Black.copy(alpha = 0.12f),
     scrim = Color.White.copy(alpha = 0.60f),
+    surfaceGlassFloating = Color.White.copy(alpha = 0.55f),
+    scrimGlassFloating = Color.White.copy(alpha = 0.35f),
+    borderGlassFloating = Color.Black.copy(alpha = 0.16f),
+    edgeLight = Color.White.copy(alpha = 0.95f),
     artworkFallbackTop = Color(0xFFE0E0E0),
     artworkFallbackBottom = Color(0xFFC8C8C8),
 )

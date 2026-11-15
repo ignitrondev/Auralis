@@ -78,6 +78,7 @@ fun GlassMiniPlayer(
             .height(MiniPlayerHeight)
             .pressScale(interactionSource),
         shape = AuralisTheme.shapes.capsule,
+        style = GlassStyle.Floating,
     ) {
         Row(
             modifier = Modifier
