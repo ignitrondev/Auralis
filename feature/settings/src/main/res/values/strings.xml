@@ -19,5 +19,14 @@
     <string name="feature_settings_update_failed">Couldn\'t check for updates. Check your connection and try again.</string>
     <string name="feature_settings_download_update">Download update</string>
     <string name="feature_settings_release_notes">What\'s new</string>
+    <string name="feature_settings_whats_new_intro">Release notes from GitHub, one entry per version. Newest first.</string>
+    <string name="feature_settings_whats_new_failed">Couldn\'t load the release notes. Check your connection and try again.</string>
+    <string name="feature_settings_whats_new_empty">No releases yet.</string>
+    <string name="feature_settings_whats_new_no_notes">No notes for this version.</string>
+    <string name="feature_settings_whats_new_available">Available</string>
+    <string name="feature_settings_whats_new_installed">Installed</string>
+    <string name="feature_settings_whats_new_pre_release">Pre-release</string>
+    <string name="feature_settings_whats_new_release">Release</string>
+    <string name="feature_settings_whats_new_ignitetunes">Versions 1.0.0 and 1.1.0 were IgniteTunes, the app Auralis replaces. Their releases stay on GitHub.</string>
     <string name="feature_settings_update_auto_check">Auralis checks GitHub for a new version when it opens, at most twice a day. Nothing about you is sent.</string>
 </resources>

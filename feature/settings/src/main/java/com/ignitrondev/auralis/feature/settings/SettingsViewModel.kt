@@ -10,6 +10,7 @@ import com.ignitrondev.auralis.domain.auth.AuthRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.domain.update.AppInfo
 import com.ignitrondev.auralis.domain.update.AppUpdates
+import com.ignitrondev.auralis.domain.update.ReleaseNote
 import com.ignitrondev.auralis.provider.api.ProviderSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +30,12 @@ sealed interface UpdateState {
     data object UpToDate : UpdateState
 
     /** @property downloadUrl The APK; opening it in the browser downloads it. */
-    data class Available(val version: String, val downloadUrl: String, val pageUrl: String) : UpdateState
+    data class Available(
+        val version: String,
+        val downloadUrl: String,
+        val pageUrl: String,
+        val notes: List<ReleaseNote> = emptyList(),
+    ) : UpdateState
 
     data object Failed : UpdateState
 }
@@ -53,7 +59,7 @@ class SettingsViewModel @Inject constructor(
     val update: StateFlow<UpdateState> = combine(check, updates.available) { check, available ->
         when {
             check == UpdateState.Checking -> check
-            available != null -> UpdateState.Available(available.version.toString(), available.apkUrl ?: available.pageUrl, available.pageUrl)
+            available != null -> UpdateState.Available(available.version.toString(), available.apkUrl ?: available.pageUrl, available.pageUrl, available.notes)
             else -> check
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, UpdateState.Idle)

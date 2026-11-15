@@ -47,6 +47,7 @@ import com.ignitrondev.auralis.core.ui.R as UiR
 @Composable
 fun SettingsScreen(
     onSignIn: () -> Unit,
+    onOpenWhatsNew: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.authState.collectAsStateWithLifecycle()
@@ -76,6 +77,7 @@ fun SettingsScreen(
                 installedVersion = viewModel.installedVersion,
                 update = update,
                 onCheck = viewModel::checkForUpdates,
+                onOpenWhatsNew = onOpenWhatsNew,
             )
         }
         Text(
@@ -151,7 +153,7 @@ fun SignInScreen(
 }
 
 @Composable
-private fun UpdatesContent(installedVersion: String, update: UpdateState, onCheck: () -> Unit) {
+private fun UpdatesContent(installedVersion: String, update: UpdateState, onCheck: () -> Unit, onOpenWhatsNew: () -> Unit) {
     val colors = AuralisTheme.colors
     val context = LocalContext.current
     val open = { url: String -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
@@ -177,12 +179,19 @@ private fun UpdatesContent(installedVersion: String, update: UpdateState, onChec
             )
         }
         if (update is UpdateState.Available) {
+            // What changed in the new version, as the release notes list it.
+            update.notes.filterNot { it.isHeading }.take(MAX_NOTES_SHOWN).forEach { note ->
+                Text(
+                    text = "•  ${note.text}",
+                    style = AuralisTheme.typography.bodySmall,
+                    color = colors.contentSecondary,
+                )
+            }
             GlassButton(
                 text = stringResource(R.string.feature_settings_download_update),
                 icon = AuralisIcons.Download,
                 onClick = { open(update.downloadUrl) },
             )
-            GlassButton(text = stringResource(R.string.feature_settings_release_notes), onClick = { open(update.pageUrl) })
         } else {
             GlassButton(
                 text = stringResource(R.string.feature_settings_check_for_updates),
@@ -191,6 +200,7 @@ private fun UpdatesContent(installedVersion: String, update: UpdateState, onChec
                 enabled = update != UpdateState.Checking,
             )
         }
+        GlassButton(text = stringResource(R.string.feature_settings_release_notes), icon = AuralisIcons.Forward, onClick = onOpenWhatsNew)
         Text(
             stringResource(R.string.feature_settings_update_auto_check),
             style = AuralisTheme.typography.bodySmall,
@@ -198,3 +208,5 @@ private fun UpdatesContent(installedVersion: String, update: UpdateState, onChec
         )
     }
 }
+
+private const val MAX_NOTES_SHOWN = 5

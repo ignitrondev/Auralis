@@ -13,11 +13,15 @@ data class AppInfo(val versionName: String)
  *
  * @property pageUrl The release page, with notes.
  * @property apkUrl The APK to download, or null when the release has none attached yet.
+ * @property notes What changed (see [parseReleaseNotes]).
+ * @property publishedAt When it was published, an ISO 8601 instant such as `2026-11-14T19:31:38Z`.
  */
 data class AppRelease(
     val version: AppVersion,
     val pageUrl: String,
     val apkUrl: String?,
+    val notes: List<ReleaseNote> = emptyList(),
+    val publishedAt: String? = null,
 )
 
 /**

@@ -6,6 +6,7 @@ package com.ignitrondev.auralis.data.repository
 import com.ignitrondev.auralis.domain.update.AppRelease
 import com.ignitrondev.auralis.domain.update.AppReleaseRepository
 import com.ignitrondev.auralis.domain.update.AppVersion
+import com.ignitrondev.auralis.domain.update.parseReleaseNotes
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
@@ -76,7 +77,13 @@ class GitHubReleaseRepository @Inject constructor() : AppReleaseRepository {
                         name.startsWith(APK_PREFIX, ignoreCase = true) && name.endsWith(".apk", ignoreCase = true)
                     }
                     ?.string("browser_download_url")
-                AppRelease(version, pageUrl, apkUrl)
+                AppRelease(
+                    version = version,
+                    pageUrl = pageUrl,
+                    apkUrl = apkUrl,
+                    notes = parseReleaseNotes(release.string("body")),
+                    publishedAt = release.string("published_at"),
+                )
             }
         }
 

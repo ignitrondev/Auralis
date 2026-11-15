@@ -24,6 +24,7 @@ import com.ignitrondev.auralis.feature.library.navigation.navigateToLibraryColle
 import com.ignitrondev.auralis.feature.library.navigation.libraryScreen
 import com.ignitrondev.auralis.feature.search.navigation.searchScreen
 import com.ignitrondev.auralis.feature.settings.navigation.navigateToSignIn
+import com.ignitrondev.auralis.feature.settings.navigation.navigateToWhatsNew
 import com.ignitrondev.auralis.feature.settings.navigation.settingsScreen
 
 @Composable
@@ -60,7 +61,12 @@ fun AuralisNavHost(
             onOpenCollection = navController::navigateToLibraryCollection,
             onBack = { navController.popBackStack() },
         )
-        settingsScreen(onSignIn = navController::navigateToSignIn, onSignInDone = { navController.popBackStack() })
+        settingsScreen(
+            onSignIn = navController::navigateToSignIn,
+            onSignInDone = { navController.popBackStack() },
+            onOpenWhatsNew = navController::navigateToWhatsNew,
+            onBack = { navController.popBackStack() },
+        )
         browseScreens(actions, onBack = { navController.popBackStack() })
     }
 }
