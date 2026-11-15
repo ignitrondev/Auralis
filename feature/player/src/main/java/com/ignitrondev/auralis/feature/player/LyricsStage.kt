@@ -19,7 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -108,23 +112,43 @@ internal fun LyricsStage(
     val list = rememberLazyListState()
     val active = lyrics.activeLineIndex(positionMs)
     val dragged by list.interactionSource.collectIsDraggedAsState()
-    var lastDragAtMs by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(dragged) { if (dragged) lastDragAtMs = System.currentTimeMillis() }
-    // Re-centre once the morph has settled too: the list's height changes while it runs.
-    val settled = expand <= 0.001f || expand >= 0.999f
-    LaunchedEffect(active, expanded, settled) {
-        if (!settled || dragged || (expanded && System.currentTimeMillis() - lastDragAtMs < FOLLOW_PAUSE_MS)) return@LaunchedEffect
+    var lastTouchAtMs by remember { mutableLongStateOf(0L) }
+    // Counts up when the pause after the user's last touch is over, so the list follows playback again.
+    var resume by remember { mutableIntStateOf(0) }
+    // Both when a finger lands and when it lifts, so the pause is counted from the end of the scroll.
+    LaunchedEffect(dragged) {
+        lastTouchAtMs = System.currentTimeMillis()
+        if (!dragged) {
+            delay(FOLLOW_PAUSE_MS)
+            resume++
+        }
+    }
+    val currentExpand by rememberUpdatedState(expand)
+    // Where the focused line sits in the viewport, 0 at the top. Plain lyrics read from the top;
+    // synced ones follow the line being sung, a little higher full screen.
+    fun focusFraction(): Float = when {
+        !lyrics.isSynced -> UNSYNCED_FOCUS
+        else -> lerp(LIVE_FOCUS, FULL_FOCUS, currentExpand)
+    }
+    suspend fun focus(animate: Boolean) {
         val target = active.coerceAtLeast(0)
         val viewport = list.layoutInfo.viewportSize.height
         val itemSize = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }?.size ?: with(density) { 56.dp.roundToPx() }
-        // Plain lyrics have no line being sung: they read from the top instead of leaving a gap above.
-        val fraction = when {
-            !lyrics.isSynced -> UNSYNCED_FOCUS
-            expanded -> FULL_FOCUS
-            else -> LIVE_FOCUS
+        val offset = -(viewport * focusFraction() - itemSize / 2f).toInt()
+        if (animate && !motion.reducedMotion) list.animateScrollToItem(target, offset) else list.scrollToItem(target, offset)
+    }
+    // While the screen opens or closes its height changes every frame; keep the focused line pinned
+    // so the text moves with it instead of jumping when the morph ends.
+    LaunchedEffect(active) {
+        snapshotFlow { currentExpand }.collect { value ->
+            if (value > 0.001f && value < 0.999f && !dragged) focus(animate = false)
         }
-        val offset = -(viewport * fraction - itemSize / 2f).toInt()
-        if (motion.reducedMotion) list.scrollToItem(target, offset) else list.animateScrollToItem(target, offset)
+    }
+    LaunchedEffect(active, expanded, resume) {
+        if (dragged || (expanded && System.currentTimeMillis() - lastTouchAtMs < FOLLOW_PAUSE_MS)) return@LaunchedEffect
+        // A settled list is moved with animation; the morph itself is handled above.
+        val settled = currentExpand <= 0.001f || currentExpand >= 0.999f
+        if (settled) focus(animate = true)
     }
     val openLabel = stringResource(R.string.feature_player_open_lyrics)
     Box(

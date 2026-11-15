@@ -173,14 +173,15 @@ fun NowPlayingScreen(
                     val retryHeight = if (failed) RetryRowHeight else 0.dp
                     // The cover's band: the whole middle for a song without lyrics, a small cover
                     // when there are lyrics, nothing when they are full screen.
-                    val liveBand = CoverSize + spacing.lg
+                    val topGap = spacing.xl * lyricsMode
+                    val liveBand = CoverSize + topGap + spacing.lg
                     val coverBand = lerp(lerp(maxHeight - retryHeight, liveBand, lyricsMode), 0.dp, expand)
                     Column(modifier = Modifier.fillMaxSize()) {
                         Box(
-                            modifier = Modifier.fillMaxWidth().height(coverBand),
+                            modifier = Modifier.fillMaxWidth().height(coverBand).padding(top = topGap),
                             contentAlignment = Alignment.Center,
                         ) {
-                            val side = minOf(middleWidth * 0.86f, coverBand - spacing.sm, 420.dp)
+                            val side = minOf(middleWidth * 0.86f, coverBand - topGap - spacing.sm, 420.dp)
                             if (side > spacing.sm) {
                                 GlowingArtwork(
                                     uri = track.artworkUri,
