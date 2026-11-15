@@ -43,6 +43,9 @@ import com.ignitrondev.auralis.core.designsystem.component.GlassSurface
 import com.ignitrondev.auralis.core.designsystem.component.GlowingArtwork
 import com.ignitrondev.auralis.core.designsystem.icon.AuralisIcons
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
+import com.ignitrondev.auralis.core.share.ShareCard
+import com.ignitrondev.auralis.core.share.ShareSheet
+import com.ignitrondev.auralis.core.share.R as ShareR
 import com.ignitrondev.auralis.core.ui.MessageState
 import com.ignitrondev.auralis.core.ui.formatDuration
 import com.ignitrondev.auralis.domain.player.PlayerState
@@ -78,6 +81,19 @@ fun NowPlayingScreen(
         MessageState(stringResource(R.string.feature_player_nothing))
         return
     }
+    var sharing by remember { mutableStateOf(false) }
+    if (sharing) {
+        val kind = stringResource(if (track.isVideo) ShareR.string.core_share_kind_video else ShareR.string.core_share_kind_song)
+        ShareSheet(
+            card = ShareCard(
+                title = track.title,
+                subtitle = listOf(kind, track.artistNames).filter { it.isNotBlank() }.joinToString(" • "),
+                artworkUri = track.artworkUri,
+                link = viewModel.shareLink(track),
+            ),
+            onDismiss = { sharing = false },
+        )
+    }
     val spacing = AuralisTheme.spacing
     GlassLayers(
         modifier = modifier.fillMaxSize(),
@@ -95,6 +111,7 @@ fun NowPlayingScreen(
                     onToggleLike = viewModel::toggleLike,
                     showLyrics = showLyrics,
                     onToggleLyrics = viewModel::toggleLyrics,
+                    onShare = { sharing = true },
                 )
                 Spacer(Modifier.height(spacing.md))
                 // The artwork, or the lyrics in its place. Switching keeps playback as it is.
@@ -178,6 +195,7 @@ private fun TopBar(
     onToggleLike: () -> Unit,
     showLyrics: Boolean,
     onToggleLyrics: () -> Unit,
+    onShare: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = AuralisTheme.spacing.sm)) {
         GlassIconButton(
@@ -186,16 +204,16 @@ private fun TopBar(
             onClick = onCollapse,
             modifier = Modifier.align(Alignment.CenterStart),
         )
-        Text(
-            text = stringResource(R.string.feature_player_now_playing),
-            style = AuralisTheme.typography.label,
-            color = AuralisTheme.colors.contentSecondary,
-            modifier = Modifier.align(Alignment.Center),
-        )
+        // No "Now playing" label: with Share, Lyrics and Like on the right it would collide with them.
         Row(
             modifier = Modifier.align(Alignment.CenterEnd),
             horizontalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.sm),
         ) {
+            GlassIconButton(
+                icon = AuralisIcons.Share,
+                contentDescription = stringResource(R.string.feature_player_share),
+                onClick = onShare,
+            )
             // Lyrics on is shown by the button's selection fill, not by colour (spec 8.2.1).
             GlassIconButton(
                 icon = AuralisIcons.Lyrics,

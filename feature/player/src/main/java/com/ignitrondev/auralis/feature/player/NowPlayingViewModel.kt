@@ -8,12 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.ignitrondev.auralis.domain.auth.AuthRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
 import com.ignitrondev.auralis.domain.model.Lyrics
+import com.ignitrondev.auralis.domain.model.MusicTrack
 import com.ignitrondev.auralis.domain.player.PlayerController
 import com.ignitrondev.auralis.domain.player.PlayerState
 import com.ignitrondev.auralis.domain.player.RepeatMode
 import com.ignitrondev.auralis.domain.repository.CatalogException
 import com.ignitrondev.auralis.domain.repository.LibraryRepository
 import com.ignitrondev.auralis.domain.repository.LyricsRepository
+import com.ignitrondev.auralis.domain.repository.ShareLinks
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +68,7 @@ class NowPlayingViewModel @Inject constructor(
     auth: AuthRepository,
     private val library: LibraryRepository,
     private val lyricsRepository: LyricsRepository,
+    private val shareLinks: ShareLinks,
 ) : ViewModel() {
     val state: StateFlow<PlayerState> = player.state
 
@@ -131,6 +134,9 @@ class NowPlayingViewModel @Inject constructor(
 
     /** Reads the like status from the account again, for example when Now Playing opens. */
     fun refreshLike() = likeRefreshes.update { it + 1 }
+
+    /** The public link of [track], shared with its card; null when it cannot be linked to. */
+    fun shareLink(track: MusicTrack): String? = shareLinks.link(track)
 
     /** Changes the like right away and reverts it if the account rejects the change. */
     fun toggleLike() {
