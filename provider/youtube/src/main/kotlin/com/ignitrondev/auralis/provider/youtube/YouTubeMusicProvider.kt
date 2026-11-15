@@ -4,15 +4,19 @@
 package com.ignitrondev.auralis.provider.youtube
 
 import com.ignitrondev.auralis.domain.model.AlbumDetail
+import com.ignitrondev.auralis.domain.model.CatalogItem
+import com.ignitrondev.auralis.domain.model.MusicArtist
+import com.ignitrondev.auralis.domain.model.MusicPlaylist
+import com.ignitrondev.auralis.domain.model.MusicTrack
 import com.ignitrondev.auralis.domain.model.ArtistDetail
 import com.ignitrondev.auralis.domain.model.HomeFeed
 import com.ignitrondev.auralis.domain.model.ListeningHistory
-import com.ignitrondev.auralis.domain.model.CatalogItem
 import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.Page
 import com.ignitrondev.auralis.domain.model.PlaylistDetail
 import com.ignitrondev.auralis.domain.model.SearchResults
 import com.ignitrondev.auralis.domain.repository.CatalogException
+import com.ignitrondev.auralis.domain.repository.ShareLinks
 import com.ignitrondev.auralis.provider.api.AccountLibraryProvider
 import com.ignitrondev.auralis.provider.api.AccountSessionProvider
 import com.ignitrondev.auralis.provider.api.CatalogProvider
@@ -61,7 +65,7 @@ import java.io.IOException
  */
 class YouTubeMusicProvider internal constructor(
     private val session: InnerTubeSession,
-) : CatalogProvider, StreamProvider, AccountSessionProvider, AccountLibraryProvider, AutoCloseable {
+) : CatalogProvider, StreamProvider, AccountSessionProvider, AccountLibraryProvider, ShareLinks, AutoCloseable {
 
     /**
      * @param attestation Mints BotGuard tokens for signed-out playback. Without it the catalog
@@ -291,6 +295,9 @@ class YouTubeMusicProvider internal constructor(
         }
     }
 
+    /** music.youtube.com links, which open in the YouTube Music app or website. */
+    override fun link(item: CatalogItem): String? = shareLink(item)
+
     override fun close() = session.close()
 
     private suspend fun browse(browseId: String): JsonObject =
@@ -336,5 +343,17 @@ class YouTubeMusicProvider internal constructor(
         const val PLAYLISTS_BROWSE_ID = "FEmusic_liked_playlists"
         const val SUBSCRIBED_ARTISTS_BROWSE_ID = "FEmusic_library_corpus_artists"
         val SESSION_REJECTED = setOf(401, 403)
+    }
+}
+
+/** The public YouTube Music link for [item], or null when it is not from YouTube Music. */
+internal fun shareLink(item: CatalogItem): String? {
+    if (item.sourceId != SOURCE_ID || item.id.isBlank()) return null
+    val base = "https://music.youtube.com"
+    return when (item) {
+        is MusicTrack -> "$base/watch?v=${item.id}"
+        is MusicPlaylist -> "$base/playlist?list=${item.id.removePrefix("VL")}"
+        is MusicArtist -> "$base/channel/${item.id}"
+        else -> "$base/browse/${item.id}"
     }
 }

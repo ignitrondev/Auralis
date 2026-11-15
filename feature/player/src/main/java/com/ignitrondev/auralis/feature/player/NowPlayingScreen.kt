@@ -42,6 +42,9 @@ import com.ignitrondev.auralis.core.designsystem.component.GlassSurface
 import com.ignitrondev.auralis.core.designsystem.component.GlowingArtwork
 import com.ignitrondev.auralis.core.designsystem.icon.AuralisIcons
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
+import com.ignitrondev.auralis.core.share.ShareCard
+import com.ignitrondev.auralis.core.share.ShareSheet
+import com.ignitrondev.auralis.core.share.R as ShareR
 import com.ignitrondev.auralis.core.ui.MessageState
 import com.ignitrondev.auralis.core.ui.formatDuration
 import com.ignitrondev.auralis.domain.player.PlayerState
@@ -75,6 +78,19 @@ fun NowPlayingScreen(
         MessageState(stringResource(R.string.feature_player_nothing))
         return
     }
+    var sharing by remember { mutableStateOf(false) }
+    if (sharing) {
+        val kind = stringResource(if (track.isVideo) ShareR.string.core_share_kind_video else ShareR.string.core_share_kind_song)
+        ShareSheet(
+            card = ShareCard(
+                title = track.title,
+                subtitle = listOf(kind, track.artistNames).filter { it.isNotBlank() }.joinToString(" • "),
+                artworkUri = track.artworkUri,
+                link = viewModel.shareLink(track),
+            ),
+            onDismiss = { sharing = false },
+        )
+    }
     val spacing = AuralisTheme.spacing
     GlassLayers(
         modifier = modifier.fillMaxSize(),
@@ -86,7 +102,7 @@ fun NowPlayingScreen(
                     .padding(horizontal = spacing.screenGutter),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                TopBar(onCollapse = onCollapse, like = like, onToggleLike = viewModel::toggleLike)
+                TopBar(onCollapse = onCollapse, like = like, onToggleLike = viewModel::toggleLike, onShare = { sharing = true })
                 Spacer(Modifier.weight(0.6f))
                 GlowingArtwork(
                     uri = track.artworkUri,
@@ -138,7 +154,7 @@ fun NowPlayingScreen(
 }
 
 @Composable
-private fun TopBar(onCollapse: () -> Unit, like: LikeUiState, onToggleLike: () -> Unit) {
+private fun TopBar(onCollapse: () -> Unit, like: LikeUiState, onToggleLike: () -> Unit, onShare: () -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = AuralisTheme.spacing.sm)) {
         GlassIconButton(
             icon = AuralisIcons.Collapse,
@@ -152,16 +168,25 @@ private fun TopBar(onCollapse: () -> Unit, like: LikeUiState, onToggleLike: () -
             color = AuralisTheme.colors.contentSecondary,
             modifier = Modifier.align(Alignment.Center),
         )
-        if (like.visible) {
-            val liked = like.liked == true
-            // Liked is shown by shape (filled or outline), never by colour (spec 8.2.1).
+        Row(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            horizontalArrangement = Arrangement.spacedBy(AuralisTheme.spacing.sm),
+        ) {
             GlassIconButton(
-                icon = if (liked) AuralisIcons.Liked else AuralisIcons.NotLiked,
-                contentDescription = stringResource(if (liked) R.string.feature_player_unlike else R.string.feature_player_like),
-                onClick = onToggleLike,
-                enabled = !like.pending,
-                modifier = Modifier.align(Alignment.CenterEnd),
+                icon = AuralisIcons.Share,
+                contentDescription = stringResource(R.string.feature_player_share),
+                onClick = onShare,
             )
+            if (like.visible) {
+                val liked = like.liked == true
+                // Liked is shown by shape (filled or outline), never by colour (spec 8.2.1).
+                GlassIconButton(
+                    icon = if (liked) AuralisIcons.Liked else AuralisIcons.NotLiked,
+                    contentDescription = stringResource(if (liked) R.string.feature_player_unlike else R.string.feature_player_like),
+                    onClick = onToggleLike,
+                    enabled = !like.pending,
+                )
+            }
         }
     }
 }

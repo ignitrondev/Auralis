@@ -12,6 +12,7 @@
     <string name="feature_player_seek">Playback position</string>
     <string name="feature_player_artwork">Album artwork</string>
     <string name="feature_player_nothing">Nothing is playing.</string>
+    <string name="feature_player_share">Share</string>
     <string name="feature_player_like">Like</string>
     <string name="feature_player_unlike">Remove like</string>
     <string name="feature_player_like_failed">Couldn\'t update your like. Try again.</string>

@@ -82,7 +82,7 @@ class NowPlayingViewModelTest {
     fun followsTheCurrentTrackAndHidesWhenSignedOut() = runTest(dispatcher) {
         val player = FakePlayer()
         val auth = FakeAuth()
-        val viewModel = NowPlayingViewModel(player, auth, FakeLibrary())
+        val viewModel = NowPlayingViewModel(player, auth, FakeLibrary()) { null }
 
         player.state.value = PlayerState.Idle.copy(currentTrack = track("liked-track"))
         advanceUntilIdle()
@@ -102,7 +102,7 @@ class NowPlayingViewModelTest {
     fun aLikeShowsAtOnceAndIsRevertedWhenTheAccountRejectsIt() = runTest(dispatcher) {
         val player = FakePlayer().apply { state.value = PlayerState.Idle.copy(currentTrack = track("song")) }
         val library = FakeLibrary()
-        val viewModel = NowPlayingViewModel(player, FakeAuth(), library)
+        val viewModel = NowPlayingViewModel(player, FakeAuth(), library) { null }
         advanceUntilIdle()
         assertEquals(false, viewModel.like.value.liked)
 

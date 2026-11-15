@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,6 +41,19 @@ object AuralisIcons {
     /** Liked is shown by shape, never by colour (spec 8.2.1): filled when liked, outline when not. */
     val Liked: ImageVector = Icons.Rounded.Favorite
     val NotLiked: ImageVector = Icons.Rounded.FavoriteBorder
+
+    val Share: ImageVector = Icons.Rounded.Share
+
+    /** Two chain links, for copying a link. Not in material-icons-core, so it is drawn here. */
+    val Link: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.Link",
+            pathData = "M17,7h-3c-0.55,0 -1,0.45 -1,1s0.45,1 1,1h3c1.65,0 3,1.35 3,3s-1.35,3 -3,3h-3c-0.55,0 -1,0.45 -1,1" +
+                "s0.45,1 1,1h3c2.76,0 5,-2.24 5,-5s-2.24,-5 -5,-5zM8,12c0,0.55 0.45,1 1,1h6c0.55,0 1,-0.45 1,-1s-0.45,-1 -1,-1H9" +
+                "c-0.55,0 -1,0.45 -1,1zM10,15H7c-1.65,0 -3,-1.35 -3,-3s1.35,-3 3,-3h3c0.55,0 1,-0.45 1,-1s-0.45,-1 -1,-1H7" +
+                "c-2.76,0 -5,2.24 -5,5s2.24,5 5,5h3c0.55,0 1,-0.45 1,-1s-0.45,-1 -1,-1z",
+        )
+    }
 
     /** Save to the library, and saved. */
     val Add: ImageVector = Icons.Rounded.Add

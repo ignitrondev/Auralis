@@ -4,6 +4,7 @@
 package com.ignitrondev.auralis.di
 
 import android.content.Context
+import com.ignitrondev.auralis.domain.repository.ShareLinks
 import com.ignitrondev.auralis.provider.api.AccountLibraryProvider
 import com.ignitrondev.auralis.provider.api.AccountSessionProvider
 import com.ignitrondev.auralis.provider.api.CatalogProvider
@@ -40,4 +41,7 @@ object ProviderModule {
 
     @Provides
     fun provideAccountLibraryProvider(provider: YouTubeMusicProvider): AccountLibraryProvider = provider
+
+    @Provides
+    fun provideShareLinks(provider: YouTubeMusicProvider): ShareLinks = provider
 }

@@ -1,0 +1,15 @@
+<resources>
+    <string name="core_share_title">Share</string>
+    <string name="core_share_to">Share to…</string>
+    <string name="core_share_copy_link">Copy link</string>
+    <string name="core_share_link_copied">Link copied</string>
+    <string name="core_share_close">Close</string>
+    <string name="core_share_preparing">Preparing the card…</string>
+    <string name="core_share_failed">Couldn\'t make the card. Try again.</string>
+    <string name="core_share_preview">Card preview</string>
+    <string name="core_share_kind_song">Song</string>
+    <string name="core_share_kind_video">Video</string>
+    <string name="core_share_kind_album">Album</string>
+    <string name="core_share_kind_playlist">Playlist</string>
+    <string name="core_share_kind_artist">Artist</string>
+</resources>
