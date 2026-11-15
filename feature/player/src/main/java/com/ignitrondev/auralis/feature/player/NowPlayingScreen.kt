@@ -136,8 +136,9 @@ fun NowPlayingScreen(
     // How far the lyrics are open (0 live, 1 full screen) and how much the screen has become a
     // lyrics screen at all (0 large cover, 1 small cover with lyrics). Springs, so they can be
     // interrupted and reversed; with reduced motion they jump.
-    val expand by animateFloatAsState(if (expanded) 1f else 0f, motion.standard(), label = "lyrics expand")
-    val lyricsMode by animateFloatAsState(if (lyrics != null) 1f else 0f, motion.standard(), label = "lyrics mode")
+    val expand = animateFloatAsState(if (expanded) 1f else 0f, motion.standard(), label = "lyrics expand").value.coerceIn(0f, 1f)
+    // The springs overshoot a little; sizes and padding derived from them must never go negative.
+    val lyricsMode = animateFloatAsState(if (lyrics != null) 1f else 0f, motion.standard(), label = "lyrics mode").value.coerceIn(0f, 1f)
 
     GlassLayers(
         modifier = modifier.fillMaxSize(),
