@@ -31,9 +31,11 @@ import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
  * theme scrim (spec section 8.2.1: artwork is the only source of color, and it lives behind the
  * glass). The wash is a precomputed bitmap ([rememberArtworkWash]), not a live blur, so it costs
  * nothing per frame and works on every Android version. Without artwork it is the neutral gradient.
+ *
+ * @param vivid A lighter scrim that keeps the cover's colours across the whole screen (Now Playing).
  */
 @Composable
-fun AmbientBackdrop(uri: String?, modifier: Modifier = Modifier) {
+fun AmbientBackdrop(uri: String?, modifier: Modifier = Modifier, vivid: Boolean = false) {
     val colors = AuralisTheme.colors
     val wash by rememberArtworkWash(uri)
     // The wash fades in over the neutral gradient once ready (an alpha change, never an animated blur).
@@ -53,12 +55,14 @@ fun AmbientBackdrop(uri: String?, modifier: Modifier = Modifier) {
                     .graphicsLayer { alpha = washAlpha },
             )
         }
-        // Scrim keeps controls and text readable over bright artwork.
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(colors.scrim.copy(alpha = 0.25f), colors.scrim, colors.background))),
-        )
+        // Scrim keeps controls and text readable over bright artwork. A vivid backdrop is lighter and
+        // never fades out to the plain ground, so the cover's colours fill the whole screen.
+        val scrim = if (vivid) {
+            listOf(colors.scrim.copy(alpha = colors.scrim.alpha * 0.36f), colors.scrim.copy(alpha = colors.scrim.alpha * 0.68f), colors.scrim.copy(alpha = colors.scrim.alpha * 1.25f))
+        } else {
+            listOf(colors.scrim.copy(alpha = 0.25f), colors.scrim, colors.background)
+        }
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(scrim)))
     }
 }
 

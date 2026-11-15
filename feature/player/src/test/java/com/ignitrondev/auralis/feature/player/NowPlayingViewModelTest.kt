@@ -145,15 +145,11 @@ class NowPlayingViewModelTest {
     }
 
     @Test
-    fun lyricsLoadOnlyWhileShownAndFollowTheTrack() = runTest(dispatcher) {
+    fun lyricsLoadForTheCurrentTrackAndFollowIt() = runTest(dispatcher) {
         val player = FakePlayer().apply { state.value = PlayerState.Idle.copy(currentTrack = track("song")) }
         val lyrics = FakeLyrics()
         val viewModel = NowPlayingViewModel(player, FakeAuth(), FakeLibrary(), lyrics) { null }
         backgroundScope.launch { viewModel.lyrics.collect {} }
-        advanceUntilIdle()
-        assertEquals("nothing is fetched while hidden", emptyList<String>(), lyrics.requested)
-
-        viewModel.toggleLyrics()
         advanceUntilIdle()
         assertTrue(viewModel.lyrics.value is LyricsUiState.Shown)
 
