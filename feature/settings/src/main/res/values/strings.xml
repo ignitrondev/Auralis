@@ -29,4 +29,9 @@
     <string name="feature_settings_whats_new_release">Release</string>
     <string name="feature_settings_whats_new_ignitetunes">Versions 1.0.0 and 1.1.0 were IgniteTunes, the app Auralis replaces. Their releases stay on GitHub.</string>
     <string name="feature_settings_update_auto_check">Auralis checks GitHub for a new version when it opens, at most twice a day. Nothing about you is sent.</string>
+    <string name="feature_settings_now_playing">Now playing</string>
+    <string name="feature_settings_previous_track">Previous track</string>
+    <string name="feature_settings_share_song">Share</string>
+    <string name="feature_settings_like_song">Like</string>
+    <string name="feature_settings_unlike_song">Remove like</string>
 </resources>
