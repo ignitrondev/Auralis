@@ -10,6 +10,8 @@ import com.ignitrondev.auralis.domain.model.CatalogItem
 import com.ignitrondev.auralis.domain.model.CatalogSection
 import com.ignitrondev.auralis.domain.model.HistorySection
 import com.ignitrondev.auralis.domain.model.LibraryCollection
+import com.ignitrondev.auralis.domain.model.LyricLine
+import com.ignitrondev.auralis.domain.model.Lyrics
 import com.ignitrondev.auralis.domain.model.ListeningHistory
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.MusicArtist
@@ -329,4 +331,34 @@ internal object LikeStatusParser {
     }
 
     private const val LIKE = "LIKE"
+}
+
+/**
+ * Lyrics (issue #34). The lyrics page ID (`MPLYt…`) is a browse target in the track's `next`
+ * response (the "Lyrics" tab). The page itself comes in two shapes:
+ * - `timedLyricsModel.lyricsData.timedLyricsData[]` (mobile music clients): one entry per line,
+ *   with `cueRange.startTimeMilliseconds` when the lyrics are timed;
+ * - `musicDescriptionShelfRenderer` (web): the whole text, plus a footer naming the source.
+ * Null when the page has neither, which is how the service says "no lyrics".
+ */
+internal object LyricsParser {
+    fun lyricsBrowseId(next: JsonObject): String? =
+        next.findObjects("browseEndpoint").firstNotNullOfOrNull { it.str("browseId")?.takeIf { id -> id.startsWith("MPLYt") } }
+
+    fun parse(root: JsonObject): Lyrics? {
+        root.findObjects("timedLyricsModel").firstOrNull()?.obj("lyricsData")?.let { data ->
+            val lines = data.arr("timedLyricsData").objects().map { line ->
+                LyricLine(
+                    text = line.str("lyricLine").orEmpty(),
+                    startMs = line.obj("cueRange")?.str("startTimeMilliseconds")?.toLongOrNull(),
+                )
+            }
+            if (lines.any { it.text.isNotBlank() }) return Lyrics(lines, data.str("sourceMessage"))
+        }
+        root.findObjects("musicDescriptionShelfRenderer").firstOrNull()?.let { shelf ->
+            val text = shelf.obj("description").text() ?: return null
+            return Lyrics(text.lines().map { LyricLine(it.trimEnd(), startMs = null) }, shelf.obj("footer").text())
+        }
+        return null
+    }
 }

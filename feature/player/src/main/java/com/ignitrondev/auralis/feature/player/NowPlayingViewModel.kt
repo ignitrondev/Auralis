@@ -7,13 +7,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ignitrondev.auralis.domain.auth.AuthRepository
 import com.ignitrondev.auralis.domain.auth.AuthState
+import com.ignitrondev.auralis.domain.model.Lyrics
 import com.ignitrondev.auralis.domain.player.PlayerController
 import com.ignitrondev.auralis.domain.player.PlayerState
 import com.ignitrondev.auralis.domain.player.RepeatMode
 import com.ignitrondev.auralis.domain.repository.CatalogException
 import com.ignitrondev.auralis.domain.repository.LibraryRepository
+import com.ignitrondev.auralis.domain.repository.LyricsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -39,11 +47,25 @@ data class LikeUiState(
     val visible: Boolean get() = trackId != null && liked != null
 }
 
+/** The lyrics panel of Now Playing. */
+sealed interface LyricsUiState {
+    data object Loading : LyricsUiState
+
+    /** The source has no lyrics for this track. */
+    data object Unavailable : LyricsUiState
+
+    data object Failed : LyricsUiState
+
+    data class Shown(val lyrics: Lyrics) : LyricsUiState
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class NowPlayingViewModel @Inject constructor(
     private val player: PlayerController,
     auth: AuthRepository,
     private val library: LibraryRepository,
+    private val lyricsRepository: LyricsRepository,
 ) : ViewModel() {
     val state: StateFlow<PlayerState> = player.state
 
@@ -71,6 +93,41 @@ class NowPlayingViewModel @Inject constructor(
             }
         }
     }
+
+    private val _showLyrics = MutableStateFlow(false)
+
+    /** Whether the lyrics panel replaces the artwork. Kept while Now Playing is closed and reopened. */
+    val showLyrics: StateFlow<Boolean> = _showLyrics.asStateFlow()
+
+    private val lyricsRetries = MutableStateFlow(0)
+
+    /**
+     * Lyrics of the current track, loaded only while the panel is shown: the lyrics page is a
+     * large response, so it is not fetched for every track that plays.
+     */
+    val lyrics: StateFlow<LyricsUiState> =
+        combine(_showLyrics, player.state.map { it.currentTrack?.id }.distinctUntilChanged(), lyricsRetries) { shown, trackId, _ ->
+            trackId.takeIf { shown }
+        }.flatMapLatest<String?, LyricsUiState> { trackId ->
+            if (trackId == null) {
+                flowOf(LyricsUiState.Loading)
+            } else {
+                flow {
+                    emit(LyricsUiState.Loading)
+                    emit(
+                        try {
+                            lyricsRepository.lyrics(trackId)?.let(LyricsUiState::Shown) ?: LyricsUiState.Unavailable
+                        } catch (error: CatalogException) {
+                            LyricsUiState.Failed
+                        },
+                    )
+                }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), LyricsUiState.Loading)
+
+    fun toggleLyrics() = _showLyrics.update { !it }
+
+    fun retryLyrics() = lyricsRetries.update { it + 1 }
 
     /** Reads the like status from the account again, for example when Now Playing opens. */
     fun refreshLike() = likeRefreshes.update { it + 1 }
@@ -117,4 +174,8 @@ class NowPlayingViewModel @Inject constructor(
             RepeatMode.ONE -> RepeatMode.OFF
         },
     )
+
+    private companion object {
+        const val STOP_TIMEOUT_MS = 5_000L
+    }
 }

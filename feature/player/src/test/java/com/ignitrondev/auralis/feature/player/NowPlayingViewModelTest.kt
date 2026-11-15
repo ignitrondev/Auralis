@@ -22,6 +22,10 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import com.ignitrondev.auralis.domain.model.LyricLine
+import com.ignitrondev.auralis.domain.model.Lyrics
+import com.ignitrondev.auralis.domain.repository.LyricsRepository
+import kotlinx.coroutines.launch
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -72,6 +76,19 @@ class NowPlayingViewModelTest {
         override suspend fun setAlbumSaved(libraryPlaylistId: String, saved: Boolean) = error("unused")
     }
 
+    private class FakeLyrics : LyricsRepository {
+        val requested = mutableListOf<String>()
+        var failNext = false
+        override suspend fun lyrics(trackId: String): Lyrics? {
+            requested += trackId
+            if (failNext) {
+                failNext = false
+                throw CatalogException(CatalogException.Reason.Network, "offline")
+            }
+            return if (trackId == "instrumental") null else Lyrics(listOf(LyricLine("line", 0)), "Source: Example")
+        }
+    }
+
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
 
@@ -82,7 +99,7 @@ class NowPlayingViewModelTest {
     fun followsTheCurrentTrackAndHidesWhenSignedOut() = runTest(dispatcher) {
         val player = FakePlayer()
         val auth = FakeAuth()
-        val viewModel = NowPlayingViewModel(player, auth, FakeLibrary())
+        val viewModel = NowPlayingViewModel(player, auth, FakeLibrary(), FakeLyrics())
 
         player.state.value = PlayerState.Idle.copy(currentTrack = track("liked-track"))
         advanceUntilIdle()
@@ -102,7 +119,7 @@ class NowPlayingViewModelTest {
     fun aLikeShowsAtOnceAndIsRevertedWhenTheAccountRejectsIt() = runTest(dispatcher) {
         val player = FakePlayer().apply { state.value = PlayerState.Idle.copy(currentTrack = track("song")) }
         val library = FakeLibrary()
-        val viewModel = NowPlayingViewModel(player, FakeAuth(), library)
+        val viewModel = NowPlayingViewModel(player, FakeAuth(), library, FakeLyrics())
         advanceUntilIdle()
         assertEquals(false, viewModel.like.value.liked)
 
@@ -125,5 +142,32 @@ class NowPlayingViewModelTest {
         assertEquals(true, viewModel.like.value.liked)
         assertFalse(viewModel.like.value.failed)
         assertEquals(listOf("song" to true, "song" to true), library.writes)
+    }
+
+    @Test
+    fun lyricsLoadOnlyWhileShownAndFollowTheTrack() = runTest(dispatcher) {
+        val player = FakePlayer().apply { state.value = PlayerState.Idle.copy(currentTrack = track("song")) }
+        val lyrics = FakeLyrics()
+        val viewModel = NowPlayingViewModel(player, FakeAuth(), FakeLibrary(), lyrics)
+        backgroundScope.launch { viewModel.lyrics.collect {} }
+        advanceUntilIdle()
+        assertEquals("nothing is fetched while hidden", emptyList<String>(), lyrics.requested)
+
+        viewModel.toggleLyrics()
+        advanceUntilIdle()
+        assertTrue(viewModel.lyrics.value is LyricsUiState.Shown)
+
+        player.state.value = PlayerState.Idle.copy(currentTrack = track("instrumental"))
+        advanceUntilIdle()
+        assertEquals(LyricsUiState.Unavailable, viewModel.lyrics.value)
+
+        lyrics.failNext = true
+        player.state.value = PlayerState.Idle.copy(currentTrack = track("other"))
+        advanceUntilIdle()
+        assertEquals(LyricsUiState.Failed, viewModel.lyrics.value)
+        viewModel.retryLyrics()
+        advanceUntilIdle()
+        assertTrue(viewModel.lyrics.value is LyricsUiState.Shown)
+        assertEquals(listOf("song", "instrumental", "other", "other"), lyrics.requested)
     }
 }
