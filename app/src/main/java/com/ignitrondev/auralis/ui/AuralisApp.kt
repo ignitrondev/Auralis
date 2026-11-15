@@ -80,7 +80,8 @@ fun AuralisApp(
     val spacing = AuralisTheme.spacing
     val motion = AuralisTheme.motion
     val barPadding = glassNavigationBarPadding()
-    val chromePadding = if (track != null) barPadding + MiniPlayerHeight + spacing.sm else barPadding
+    // The mini player floats a gap above the navigation bar (12 dp, as in the design mockup).
+    val chromePadding = if (track != null) barPadding + MiniPlayerGap + MiniPlayerHeight + spacing.sm else barPadding
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
     // Detail and sign-in pages are not tabs: keep the tab they were opened from selected.
     var selectedTab by rememberSaveable { mutableStateOf(TopLevelDestination.HOME) }
@@ -106,7 +107,7 @@ fun AuralisApp(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(horizontal = spacing.lg)
-                            .padding(bottom = barPadding + spacing.xs),
+                            .padding(bottom = barPadding + MiniPlayerGap),
                     ) {
                         val current = track ?: return@AnimatedVisibility
                         val error = playerState.error
@@ -232,6 +233,7 @@ private const val SHARED_PLAYER = "player"
 private const val SHARED_ARTWORK = "player-artwork"
 
 private val MiniPlayerHeight = 64.dp
+private val MiniPlayerGap = 12.dp
 
 @Composable
 private fun playbackErrorText(error: PlaybackError): String = stringResource(
