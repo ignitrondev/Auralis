@@ -70,6 +70,22 @@ object AuralisIcons {
         )
     }
 
+    /** Corners pointing out: open something full screen. */
+    val Expand: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.Expand",
+            pathData = "M7,14H5v5h5v-2H7v-3zM5,10h2V7h3V5H5v5zM17,17h-3v2h5v-5h-2v3zM14,5v2h3v3h2V5h-5z",
+        )
+    }
+
+    /** Corners pointing in: leave full screen. */
+    val Shrink: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.Shrink",
+            pathData = "M5,16h3v3h2v-5H5v2zM8,8H5v2h5V5H8v3zM14,19h2v-3h3v-2h-5v5zM16,8V5h-2v5h5V8h-3z",
+        )
+    }
+
     /** Arrow into a tray. Not in material-icons-core, so it is drawn here. */
     val Download: ImageVector by lazy {
         roundedIcon(

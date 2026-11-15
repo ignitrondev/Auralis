@@ -97,21 +97,16 @@ class NowPlayingViewModel @Inject constructor(
         }
     }
 
-    private val _showLyrics = MutableStateFlow(false)
-
-    /** Whether the lyrics panel replaces the artwork. Kept while Now Playing is closed and reopened. */
-    val showLyrics: StateFlow<Boolean> = _showLyrics.asStateFlow()
-
     private val lyricsRetries = MutableStateFlow(0)
 
     /**
-     * Lyrics of the current track, loaded only while the panel is shown: the lyrics page is a
-     * large response, so it is not fetched for every track that plays.
+     * Lyrics of the current track. They load while Now Playing is on screen (the flow is shared
+     * only while collected), not for every track that plays in the background: the lyrics page
+     * is a large response.
      */
     val lyrics: StateFlow<LyricsUiState> =
-        combine(_showLyrics, player.state.map { it.currentTrack?.id }.distinctUntilChanged(), lyricsRetries) { shown, trackId, _ ->
-            trackId.takeIf { shown }
-        }.flatMapLatest<String?, LyricsUiState> { trackId ->
+        combine(player.state.map { it.currentTrack?.id }.distinctUntilChanged(), lyricsRetries) { trackId, _ -> trackId }
+            .flatMapLatest<String?, LyricsUiState> { trackId ->
             if (trackId == null) {
                 flowOf(LyricsUiState.Loading)
             } else {
@@ -127,8 +122,6 @@ class NowPlayingViewModel @Inject constructor(
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), LyricsUiState.Loading)
-
-    fun toggleLyrics() = _showLyrics.update { !it }
 
     fun retryLyrics() = lyricsRetries.update { it + 1 }
 

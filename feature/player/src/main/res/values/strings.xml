@@ -14,8 +14,10 @@
     <string name="feature_player_share">Share</string>
     <string name="feature_player_like">Like</string>
     <string name="feature_player_unlike">Remove like</string>
-    <string name="feature_player_show_lyrics">Show lyrics</string>
-    <string name="feature_player_hide_lyrics">Hide lyrics</string>
+    <string name="feature_player_now_playing">Playing now</string>
+    <string name="feature_player_open_lyrics">Open lyrics full screen</string>
+    <string name="feature_player_close_lyrics">Close lyrics</string>
+    <string name="feature_player_lyrics_failed_retry">Lyrics didn\'t load. Try again</string>
     <string name="feature_player_lyrics_unavailable">Lyrics aren\'t available for this song.</string>
     <string name="feature_player_lyrics_failed">Couldn\'t load the lyrics.</string>
     <string name="feature_player_lyrics_retry">Try again</string>
