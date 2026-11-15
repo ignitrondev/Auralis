@@ -18,7 +18,7 @@ class DefaultCatalogRepositoryTest {
     private class CountingProvider : CatalogProvider {
         var homeCalls = 0
         override val sourceId = "fake"
-        override suspend fun home(): HomeFeed {
+        override suspend fun home(mood: String?): HomeFeed {
             homeCalls++
             return HomeFeed(listOf(CatalogSection("call $homeCalls", emptyList())))
         }

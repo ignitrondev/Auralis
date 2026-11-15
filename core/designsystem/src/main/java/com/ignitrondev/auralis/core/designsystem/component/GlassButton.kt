@@ -82,6 +82,7 @@ fun GlassButton(
  * @param contentDescription Required: the button has no visible label.
  * @param selected Shows a selection fill (for toggles such as shuffle). State is never shown by color.
  * @param size Touch target and glass diameter; at least 48dp.
+ * @param content Replaces the icon, for example with an initial. The caller describes it, so give [contentDescription] anyway.
  */
 @Composable
 fun GlassIconButton(
@@ -92,6 +93,7 @@ fun GlassIconButton(
     enabled: Boolean = true,
     selected: Boolean = false,
     size: Dp = ControlHeight,
+    content: (@Composable () -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val colors = AuralisTheme.colors
@@ -115,12 +117,16 @@ fun GlassIconButton(
                 .semantics { this.selected = selected },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = if (enabled) colors.contentPrimary else colors.contentDisabled,
-                modifier = Modifier.size(size * 0.46f),
-            )
+            if (content != null) {
+                content()
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = if (enabled) colors.contentPrimary else colors.contentDisabled,
+                    modifier = Modifier.size(size * 0.46f),
+                )
+            }
         }
     }
 }

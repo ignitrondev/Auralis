@@ -13,6 +13,7 @@ import com.ignitrondev.auralis.domain.model.LibraryCollection
 import com.ignitrondev.auralis.domain.model.LyricLine
 import com.ignitrondev.auralis.domain.model.Lyrics
 import com.ignitrondev.auralis.domain.model.ListeningHistory
+import com.ignitrondev.auralis.domain.model.Mood
 import com.ignitrondev.auralis.domain.model.MusicAlbum
 import com.ignitrondev.auralis.domain.model.MusicArtist
 import com.ignitrondev.auralis.domain.model.MusicPlaylist
@@ -361,4 +362,19 @@ internal object LyricsParser {
         }
         return null
     }
+}
+
+/**
+ * The mood chips at the top of the home page (`chipCloudRenderer`: "Relax", "Energize", …). Each
+ * chip's `navigationEndpoint.browseEndpoint.params` is the filter, asked for with the home browse
+ * ID. Chips without text or params are skipped.
+ */
+internal object MoodParser {
+    fun parse(root: JsonObject): List<Mood> =
+        root.findObjects("chipCloudRenderer").firstOrNull()?.arr("chips").objects().mapNotNull { chip ->
+            val renderer = chip.renderer("chipCloudChipRenderer") ?: return@mapNotNull null
+            val label = renderer.obj("text").text() ?: return@mapNotNull null
+            val params = renderer.obj("navigationEndpoint").obj("browseEndpoint").str("params") ?: return@mapNotNull null
+            Mood(id = params, label = label)
+        }.orEmpty()
 }

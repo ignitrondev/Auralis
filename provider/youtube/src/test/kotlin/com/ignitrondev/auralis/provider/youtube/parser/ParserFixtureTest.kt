@@ -78,6 +78,14 @@ class ParserFixtureTest {
     }
 
     @Test
+    fun homeHasMoodChipsWithTheirFilters(): Unit {
+        val moods = MoodParser.parse(fixture("home"))
+        assertEquals(listOf("Feel good", "Relax", "Energize", "Commute", "Workout", "Romance", "Sad", "Party", "Sleep", "Focus"), moods.map { it.label })
+        assertTrue("every chip carries its filter", moods.all { it.id.isNotBlank() })
+        assertEquals("a filter is unique per chip", moods.size, moods.map { it.id }.distinct().size)
+    }
+
+    @Test
     fun albumHasHeaderAndAllTracks() {
         val detail = AlbumParser.parse("MPREb_VTWUulRLLd6", fixture("album"))
         assertEquals("Hurry up, We're Dreaming", detail.album.title)
