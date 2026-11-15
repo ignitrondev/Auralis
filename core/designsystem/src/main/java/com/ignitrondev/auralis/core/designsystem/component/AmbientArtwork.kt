@@ -3,56 +3,55 @@
  */
 package com.ignitrondev.auralis.core.designsystem.component
 
-import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
 
-/** Real blur needs Android 12; older versions get the neutral fallback instead. */
-private val blurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 /**
- * Full-screen ambient background for Now Playing: the artwork, heavily blurred, under the theme
- * scrim (spec section 8.2.1: artwork is the only source of color, and it lives behind the glass).
- * Without artwork, or without blur support, it is the neutral gradient.
+ * Full-screen ambient background for Now Playing: a soft wash of the artwork's colours under the
+ * theme scrim (spec section 8.2.1: artwork is the only source of color, and it lives behind the
+ * glass). The wash is a precomputed bitmap ([rememberArtworkWash]), not a live blur, so it costs
+ * nothing per frame and works on every Android version. Without artwork it is the neutral gradient.
  */
 @Composable
 fun AmbientBackdrop(uri: String?, modifier: Modifier = Modifier) {
     val colors = AuralisTheme.colors
-    // Clipped: the scaled, blurred artwork must not spill past the screen it belongs to (it showed
-    // as a tinted band over the page below while Now Playing slid away).
+    val wash by rememberArtworkWash(uri)
+    // The wash fades in over the neutral gradient once ready (an alpha change, never an animated blur).
+    val washAlpha by animateFloatAsState(if (wash != null) WASH_ALPHA else 0f, AuralisTheme.motion.fade(), label = "ambient wash")
+    // Clipped: the wash must not spill past the screen it belongs to (it showed as a tinted band
+    // over the page below while Now Playing slid away).
     Box(modifier = modifier.fillMaxSize().clipToBounds().background(colors.background)) {
-        if (uri != null && blurSupported) {
-            AsyncImage(
-                model = uri,
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(colors.artworkFallbackTop, colors.background))))
+        wash?.let { image ->
+            Image(
+                bitmap = image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                filterQuality = FilterQuality.High,
                 modifier = Modifier
                     .fillMaxSize()
-                    .scale(1.4f)
-                    .blur(90.dp)
-                    .alpha(0.85f),
+                    .graphicsLayer { alpha = washAlpha },
             )
-        } else {
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(colors.artworkFallbackTop, colors.background))))
         }
         // Scrim keeps controls and text readable over bright artwork.
         Box(
@@ -63,9 +62,13 @@ fun AmbientBackdrop(uri: String?, modifier: Modifier = Modifier) {
     }
 }
 
+private const val WASH_ALPHA = 0.85f
+
 /**
- * Large rounded artwork with a glow in its own colors: a blurred copy of the artwork sits
- * behind it, slightly lower, like a colored shadow. Below Android 12 it gets a neutral shadow.
+ * Large rounded artwork with a glow in its own colors: a soft wash of the artwork
+ * ([rememberArtworkWash]) sits behind it, slightly larger and lower, its edges faded out like a
+ * coloured shadow. No live blur, so it costs nothing per frame (a blurred copy made opening Now
+ * Playing stutter) and it works on every Android version.
  */
 @Composable
 fun GlowingArtwork(
@@ -74,31 +77,49 @@ fun GlowingArtwork(
     modifier: Modifier = Modifier,
     shape: Shape = AuralisTheme.shapes.large,
 ) {
+    val wash by rememberArtworkWash(uri)
+    val glowAlpha by animateFloatAsState(if (wash != null) 1f else 0f, AuralisTheme.motion.fade(), label = "artwork glow")
     BoxWithConstraints(modifier = modifier) {
-        val glowOffset = maxWidth * 0.09f
-        if (uri != null && blurSupported) {
-            AsyncImage(
-                model = uri,
+        val glowOffset = maxWidth * GLOW_OFFSET
+        wash?.let { image ->
+            Image(
+                bitmap = image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                filterQuality = FilterQuality.High,
                 modifier = Modifier
                     .matchParentSize()
-                    .padding(horizontal = maxWidth * 0.05f)
                     .offset(y = glowOffset)
-                    // Unbounded: the blur spreads past the image bounds like a soft shadow,
-                    // instead of being cut into a hard-edged rectangle.
-                    .blur(36.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded),
+                    .graphicsLayer {
+                        scaleX = GLOW_SCALE
+                        scaleY = GLOW_SCALE
+                        alpha = glowAlpha
+                        // Offscreen so the fade below masks only the glow, not what is under it.
+                        compositingStrategy = CompositingStrategy.Offscreen
+                    }
+                    .drawWithContent {
+                        drawContent()
+                        // Fade the edges out: a soft halo instead of a coloured rectangle.
+                        drawRect(
+                            brush = Brush.radialGradient(
+                                0.35f to Color.Black,
+                                1f to Color.Transparent,
+                                center = center,
+                                radius = size.maxDimension / 2,
+                            ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    },
             )
         }
         Artwork(
             uri = uri,
             contentDescription = contentDescription,
             shape = shape,
-            modifier = Modifier
-                .matchParentSize()
-                .then(
-                    if (blurSupported) Modifier else Modifier.shadow(24.dp, shape, ambientColor = Color.Black, spotColor = Color.Black),
-                ),
+            modifier = Modifier.matchParentSize(),
         )
     }
 }
+
+private const val GLOW_OFFSET = 0.09f
+private const val GLOW_SCALE = 1.12f

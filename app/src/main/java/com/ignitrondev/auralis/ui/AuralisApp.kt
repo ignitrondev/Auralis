@@ -6,6 +6,7 @@ package com.ignitrondev.auralis.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
@@ -88,7 +89,6 @@ fun AuralisApp(
     var playerExpanded by rememberSaveable { mutableStateOf(false) }
     val showPlayer = playerExpanded && track != null
     LaunchedEffect(track == null) { if (track == null) playerExpanded = false }
-    BackHandler(enabled = showPlayer) { playerExpanded = false }
     // The container's corners: the mini player's capsule while small, square once full screen.
     val containerCorner by animateDpAsState(if (showPlayer) 0.dp else MiniPlayerHeight / 2, motion.fade(), label = "player corner")
 
@@ -171,6 +171,10 @@ fun AuralisApp(
                 }
             }
             AnimatedVisibility(visible = showPlayer, enter = motion.enter, exit = motion.exit) {
+                // Registered here, when Now Playing appears, so it is the newest back callback and
+                // wins over the NavHost's. Registered with the shell it lost to the NavHost whenever
+                // a page was open underneath: Back popped that hidden page and Now Playing stayed.
+                BackHandler(enabled = transition.targetState == EnterExitState.Visible) { playerExpanded = false }
                 NowPlayingScreen(
                     onCollapse = { playerExpanded = false },
                     modifier = Modifier.sharedContainer(this@SharedTransitionLayout, this@AnimatedVisibility, RoundedCornerShape(containerCorner)),
