@@ -44,10 +44,6 @@ Get the [Auralis v2.0.0 APK](https://github.com/ignitrondev/Auralis/releases/dow
 for Android 8.0 or newer. When prompted, allow your browser or file manager to install apps from this
 source.
 
-If you have a **debug build of Auralis** installed, remove it before installing this release. Android
-does not allow a release APK to update a debug build because they use different signing keys.
-Removing the debug build also removes its local app data. Future release APKs will update normally.
-
 ## Report a problem
 
 Try browsing, searching, signing in, playing music in the background, and using the queue. If you find
