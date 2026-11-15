@@ -7,9 +7,9 @@
 <p align="center"><strong>YouTube Music, with a native Android feel.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/ignitrondev/Auralis/releases/download/v2.0.0-beta.2/Auralis-v2.0.0-beta.2.apk"><strong>Download beta APK</strong></a>
+  <a href="https://github.com/ignitrondev/Auralis/releases/download/v2.0.0/Auralis-v2.0.0.apk"><strong>Download APK</strong></a>
   ·
-  <a href="https://github.com/ignitrondev/Auralis/releases/tag/v2.0.0-beta.2">Release details</a>
+  <a href="https://github.com/ignitrondev/Auralis/releases/tag/v2.0.0">Release details</a>
   ·
   <a href="https://github.com/ignitrondev/Auralis/issues/new/choose">Send feedback</a>
 </p>
@@ -23,8 +23,8 @@
 Auralis is an independent YouTube Music client for Android. Explore music, search for songs and
 artists, and listen through a native player wrapped in a calm, monochrome **Liquid Glass** interface.
 
-> **Beta · v2.0.0-beta.2.** Try it out and tell us what works well and what needs attention. Auralis
-> is still in active development, so you may run into bugs.
+> **Release · v2.0.0.** This is the first stable release of Auralis. It is still in active
+> development, so tell us what works well and what needs attention.
 
 ## The app
 
@@ -40,7 +40,7 @@ Settings screens, with a compact player that stays close while you browse.
 
 ## Download and install
 
-Get the [Auralis v2.0.0-beta.2 APK](https://github.com/ignitrondev/Auralis/releases/download/v2.0.0-beta.2/Auralis-v2.0.0-beta.2.apk)
+Get the [Auralis v2.0.0 APK](https://github.com/ignitrondev/Auralis/releases/download/v2.0.0/Auralis-v2.0.0.apk)
 for Android 8.0 or newer. When prompted, allow your browser or file manager to install apps from this
 source.
 
@@ -48,7 +48,7 @@ If you have a **debug build of Auralis** installed, remove it before installing 
 does not allow a release APK to update a debug build because they use different signing keys.
 Removing the debug build also removes its local app data. Future release APKs will update normally.
 
-## Help test the beta
+## Report a problem
 
 Try browsing, searching, signing in, playing music in the background, and using the queue. If you find
 a problem, [open an issue](https://github.com/ignitrondev/Auralis/issues/new/choose) with your phone
