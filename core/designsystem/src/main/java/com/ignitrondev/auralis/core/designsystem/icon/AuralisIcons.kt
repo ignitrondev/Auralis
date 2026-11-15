@@ -45,6 +45,17 @@ object AuralisIcons {
     val Add: ImageVector = Icons.Rounded.Add
     val Saved: ImageVector = Icons.Rounded.Check
 
+    /** Lines of text of different lengths, for lyrics. Not in material-icons-core, so it is drawn here. */
+    val Lyrics: ImageVector by lazy {
+        roundedIcon(
+            name = "Auralis.Lyrics",
+            pathData = "M5,5h14a1,1 0,0 1,0 2h-14a1,1 0,0 1,0 -2z" +
+                "M5,9.5h9a1,1 0,0 1,0 2h-9a1,1 0,0 1,0 -2z" +
+                "M5,14h12a1,1 0,0 1,0 2h-12a1,1 0,0 1,0 -2z" +
+                "M5,18.5h6a1,1 0,0 1,0 2h-6a1,1 0,0 1,0 -2z",
+        )
+    }
+
     /** Arrow into a tray. Not in material-icons-core, so it is drawn here. */
     val Download: ImageVector by lazy {
         roundedIcon(

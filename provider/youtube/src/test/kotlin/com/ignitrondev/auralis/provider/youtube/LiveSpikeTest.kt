@@ -245,6 +245,58 @@ class LiveSpikeTest {
 
     private class StopSpike : RuntimeException()
 
+    /**
+     * Lyrics spike (issue #34): where YouTube Music keeps lyrics, and whether they are timed.
+     * Prints shapes and counts only, never lyric text (it is copyrighted).
+     */
+    @Test
+    fun lyrics(): Unit = runBlocking {
+        assumeTrue("live spike disabled; run with -Plive", live)
+        InnerTubeSession().use { session ->
+            val itx = session.innerTube
+            for (query in listOf("Midnight City M83", "Teh Hijau Tulus", "Blinding Lights The Weeknd", "Shape of You Ed Sheeran", "Komang Raim Laode")) {
+                val videoId = itx.search(YouTubeClient.WEB_REMIX, query = query).json("lyrics-search").findString("videoId") ?: continue
+                val next = itx.next(YouTubeClient.WEB_REMIX, videoId = videoId).json("lyrics-next")
+                val lyricsId = Regex("\"(MPLYt[^\"]+)\"").find(next.toString())?.groupValues?.get(1)
+                println("SPIKE lyrics $query: lyricsBrowseId=${lyricsId != null}")
+                if (lyricsId == null) continue
+                for (client in listOf(YouTubeClient.IOS_MUSIC)) {
+                    val page = runCatching { itx.browse(client, browseId = lyricsId).json("lyrics-page") }
+                        .onFailure { println("SPIKE   ${client.clientName} browse failed: ${it::class.simpleName} ${it.message?.take(120)}") }
+                        .getOrNull() ?: continue
+                    val text = page.toString()
+                    val timed = Regex("\"startTimeMilliseconds\":\"?(\\d+)").findAll(text).map { it.groupValues[1] }.toList()
+                    // Shape of the timed model: key paths and value kinds only, never the lyric text.
+                    fun shape(element: JsonElement, path: String, depth: Int): List<String> = when {
+                        depth > 9 -> emptyList()
+                        element is JsonObject -> element.flatMap { (key, value) -> shape(value, "$path.$key", depth + 1) }
+                        element is kotlinx.serialization.json.JsonArray ->
+                            listOf("$path[${element.size}]") + (element.firstOrNull()?.let { shape(it, "$path[0]", depth + 1) } ?: emptyList())
+                        else -> listOf(path + if ((element as kotlinx.serialization.json.JsonPrimitive).isString) ":str" else ":${element}")
+                    }
+                    Regex("\"timedLyricsModel\"").find(text)?.let {
+                        fun find(element: JsonElement): JsonElement? = when (element) {
+                            is JsonObject -> element["timedLyricsModel"] ?: element.values.firstNotNullOfOrNull(::find)
+                            is kotlinx.serialization.json.JsonArray -> element.firstNotNullOfOrNull(::find)
+                            else -> null
+                        }
+                        find(page)?.let { model ->
+                            val lines = model.jsonObject["lyricsData"]?.jsonObject?.get("timedLyricsData") as? kotlinx.serialization.json.JsonArray
+                            val first = lines?.firstOrNull()
+                            val keys = (first as? JsonObject)?.let { shape(it, "line", 0) }.orEmpty().filterNot { it.startsWith("line.lyricLine") }
+                            println("SPIKE     lines=${lines?.size} static=${model.jsonObject["lyricsData"]?.jsonObject?.get("staticLayout")} firstLineFields=$keys")
+                        }
+                    }
+                    println(
+                        "SPIKE   ${client.clientName}: keys=${page.keys.sorted()} plain=${"musicDescriptionShelfRenderer" in text} " +
+                            "timedModel=${"timedLyricsModel" in text} timedLines=${timed.size} firstTimes=${timed.take(3)} " +
+                            "source=${Regex("Source: [^\"]+").find(text)?.value}",
+                    )
+                }
+            }
+        }
+    }
+
     private suspend fun HttpResponse.json(name: String): JsonObject {
         check(status.value in 200..299) { "$name failed: ${status.value}" }
         val text = bodyAsTextLimited(InnerTubeSession.MAX_RESPONSE_BYTES)
