@@ -196,6 +196,7 @@ fun NowPlayingScreen(
                             LyricsStage(
                                 lyrics = lyrics,
                                 positionMs = state.positionMs,
+                                isPlaying = state.isPlaying,
                                 expand = expand,
                                 expanded = expanded,
                                 onSeek = viewModel::seekTo,
