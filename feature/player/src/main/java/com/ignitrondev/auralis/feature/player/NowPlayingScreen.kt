@@ -11,7 +11,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,13 +23,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -33,7 +37,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,15 +49,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.toUpperCase
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.util.lerp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ignitrondev.auralis.core.designsystem.component.AmbientBackdrop
@@ -64,6 +74,7 @@ import com.ignitrondev.auralis.core.designsystem.component.GlassStyle
 import com.ignitrondev.auralis.core.designsystem.component.GlassSurface
 import com.ignitrondev.auralis.core.designsystem.component.GlowingArtwork
 import com.ignitrondev.auralis.core.designsystem.icon.AuralisIcons
+import com.ignitrondev.auralis.core.designsystem.theme.AuralisMotion
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
 import com.ignitrondev.auralis.core.share.ShareCard
 import com.ignitrondev.auralis.core.share.ShareSheet
@@ -73,6 +84,7 @@ import com.ignitrondev.auralis.core.ui.formatDuration
 import com.ignitrondev.auralis.domain.model.MusicTrack
 import com.ignitrondev.auralis.domain.player.PlayerState
 import com.ignitrondev.auralis.domain.player.RepeatMode
+import kotlin.math.roundToInt
 import androidx.compose.ui.text.intl.Locale
 
 /**
@@ -136,9 +148,35 @@ fun NowPlayingScreen(
     // How far the lyrics are open (0 live, 1 full screen) and how much the screen has become a
     // lyrics screen at all (0 large cover, 1 small cover with lyrics). Springs, so they can be
     // interrupted and reversed; with reduced motion they jump.
-    val expand = animateFloatAsState(if (expanded) 1f else 0f, motion.standard(), label = "lyrics expand").value.coerceIn(0f, 1f)
-    // The springs overshoot a little; sizes and padding derived from them must never go negative.
-    val lyricsMode = animateFloatAsState(if (lyrics != null) 1f else 0f, motion.standard(), label = "lyrics mode").value.coerceIn(0f, 1f)
+    //
+    // Neither value is read while composing. They are read where things are measured or drawn, so
+    // a frame of the animation re-draws layers instead of recomposing and laying out the screen;
+    // that is what keeps the morph at the display's frame rate.
+    // A soft spring with no bounce: the morph is a large move and reads as smooth when it eases.
+    val morph: FiniteAnimationSpec<Float> = if (motion.reducedMotion) snap() else spring(dampingRatio = 1f, stiffness = MORPH_STIFFNESS)
+    val expandState = animateFloatAsState(if (expanded) 1f else 0f, morph, label = "lyrics expand")
+    val lyricsModeState = animateFloatAsState(if (lyrics != null) 1f else 0f, motion.standard(), label = "lyrics mode")
+    // The springs overshoot a little; sizes derived from them must never go negative.
+    val expand = remember { { expandState.value.coerceIn(0f, 1f) } }
+    val lyricsMode = remember { { lyricsModeState.value.coerceIn(0f, 1f) } }
+    // The two headers are only in the tree while they can be seen.
+    val showTopBar by remember { derivedStateOf { expand() < 0.999f } }
+    val showLyricsHeader by remember { derivedStateOf { expand() > 0.001f } }
+
+    val density = LocalDensity.current
+    val failed = lyricsState is LyricsUiState.Failed
+    val liveBandPx = with(density) { (CoverSize + spacing.xl + spacing.lg).toPx() }
+    val coverGapPx = with(density) { spacing.xl.toPx() }
+    val retryPx = if (failed) with(density) { RetryRowHeight.toPx() } else 0f
+    // The panel floats over the bottom of the stage; this is the room it takes, margins included.
+    var panelHeightPx by remember { mutableIntStateOf(0) }
+    val panelMarginPx = with(density) { (spacing.md + spacing.lg).toPx() }
+    val panelRoom = remember(panelMarginPx) { { panelHeightPx + panelMarginPx } }
+    // The cover's band: everything above the panel for a song without lyrics, a small cover when
+    // there are lyrics.
+    val coverBand: (Int) -> Int = { stageHeight ->
+        lerp(stageHeight - panelRoom() - retryPx, liveBandPx, lyricsMode()).roundToInt().coerceAtLeast(0)
+    }
 
     GlassLayers(
         modifier = modifier.fillMaxSize(),
@@ -151,76 +189,99 @@ fun NowPlayingScreen(
             ) {
                 // The top bar and the lyrics header share one row and cross-fade.
                 Box(modifier = Modifier.fillMaxWidth().height(HeaderHeight)) {
-                    if (expand < 0.999f) {
+                    if (showTopBar) {
                         TopBar(
                             onCollapse = onCollapse,
                             like = like,
                             onToggleLike = viewModel::toggleLike,
                             onShare = { sharing = true },
-                            modifier = Modifier.graphicsLayer { alpha = 1f - expand },
+                            modifier = Modifier.graphicsLayer { alpha = 1f - expand() },
                         )
                     }
-                    if (expand > 0.001f) {
+                    if (showLyricsHeader) {
                         LyricsHeader(
                             track = track,
                             onClose = { expanded = false },
-                            modifier = Modifier.graphicsLayer { alpha = expand },
+                            modifier = Modifier.graphicsLayer { alpha = expand() },
                         )
                     }
                 }
-                BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    val middleWidth = maxWidth
-                    val failed = lyricsState is LyricsUiState.Failed
-                    val retryHeight = if (failed) RetryRowHeight else 0.dp
-                    // The cover's band: the whole middle for a song without lyrics, a small cover
-                    // when there are lyrics, nothing when they are full screen.
-                    val topGap = spacing.xl * lyricsMode
-                    val liveBand = CoverSize + topGap + spacing.lg
-                    val coverBand = lerp(lerp(maxHeight - retryHeight, liveBand, lyricsMode), 0.dp, expand)
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(coverBand).padding(top = topGap),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            val side = minOf(middleWidth * 0.86f, coverBand - topGap - spacing.sm, 420.dp)
-                            if (side > spacing.sm) {
-                                GlowingArtwork(
-                                    uri = track.artworkUri,
-                                    contentDescription = stringResource(R.string.feature_player_artwork),
-                                    shape = AuralisTheme.shapes.large,
-                                    modifier = artworkModifier.size(side),
-                                )
+                // The stage. Its size never changes: the lyrics fill all of it, the cover sits over
+                // its top and the panel over its bottom. Opening the lyrics moves and fades those
+                // layers; nothing is measured again.
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    var stageHeightPx by remember { mutableIntStateOf(0) }
+                    if (lyrics != null) {
+                        LyricsStage(
+                            lyrics = lyrics,
+                            positionMs = state.positionMs,
+                            isPlaying = state.isPlaying,
+                            expand = expand,
+                            expanded = expanded,
+                            topInset = liveBandPx,
+                            bottomInset = panelRoom,
+                            onSeek = viewModel::seekTo,
+                            onExpand = { expanded = true },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { alpha = lyricsMode() },
+                        )
+                    }
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .layout { measurable, constraints ->
+                                stageHeightPx = constraints.maxHeight
+                                val band = coverBand(constraints.maxHeight)
+                                // The cover sits a little lower when there are lyrics under it.
+                                val gap = (coverGapPx * lyricsMode()).roundToInt().coerceAtMost(band)
+                                val placeable = measurable.measure(constraints.copy(minHeight = band - gap, maxHeight = band - gap))
+                                layout(placeable.width, band) { placeable.place(0, gap) }
                             }
-                        }
-                        if (lyrics != null) {
-                            LyricsStage(
-                                lyrics = lyrics,
-                                positionMs = state.positionMs,
-                                expand = expand,
-                                expanded = expanded,
-                                onSeek = viewModel::seekTo,
-                                onExpand = { expanded = true },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                                    .graphicsLayer { alpha = lyricsMode },
+                            // Full-screen lyrics: the cover shrinks away upwards.
+                            .graphicsLayer {
+                                val open = expand()
+                                alpha = 1f - open
+                                scaleX = lerp(1f, COVER_GONE_SCALE, open)
+                                scaleY = scaleX
+                                translationY = -size.height * COVER_GONE_SHIFT * open
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val side = minOf(maxWidth * 0.86f, maxHeight - spacing.sm, 420.dp)
+                        if (side > spacing.sm) {
+                            GlowingArtwork(
+                                uri = track.artworkUri,
+                                contentDescription = stringResource(R.string.feature_player_artwork),
+                                shape = AuralisTheme.shapes.large,
+                                modifier = artworkModifier.size(side),
                             )
-                        } else if (failed) {
-                            Box(Modifier.fillMaxWidth().height(retryHeight), contentAlignment = Alignment.Center) {
-                                GlassButton(
-                                    text = stringResource(R.string.feature_player_lyrics_failed_retry),
-                                    icon = AuralisIcons.Retry,
-                                    onClick = viewModel::retryLyrics,
-                                )
-                            }
                         }
                     }
+                    if (lyrics == null && failed) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(RetryRowHeight)
+                                .offset { IntOffset(0, coverBand(stageHeightPx)) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            GlassButton(
+                                text = stringResource(R.string.feature_player_lyrics_failed_retry),
+                                icon = AuralisIcons.Retry,
+                                onClick = viewModel::retryLyrics,
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = revealModifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = spacing.lg)
+                            .onSizeChanged { panelHeightPx = it.height },
+                    ) {
+                        PlayerPanel(track = track, state = state, like = like, expanded = expanded, viewModel = viewModel)
+                    }
                 }
-                Spacer(Modifier.height(spacing.md))
-                Box(modifier = revealModifier) {
-                    PlayerPanel(track = track, state = state, like = like, expanded = expanded, viewModel = viewModel)
-                }
-                Spacer(Modifier.height(spacing.lg))
             }
         },
     ) {
@@ -325,8 +386,10 @@ private fun PlayerPanel(
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     val duration = state.durationMs.coerceAtLeast(0)
     val fraction = dragFraction ?: if (duration > 0) state.positionMs.toFloat() / duration else 0f
-    val enter = fadeIn(motion.fade())
-    val exit = fadeOut(motion.fade())
+    // In step with the lyrics morph, which this folds and unfolds with.
+    val resize: FiniteAnimationSpec<IntSize> = if (motion.reducedMotion) snap() else spring(dampingRatio = 1f, stiffness = MORPH_STIFFNESS)
+    val enter = fadeIn(tween(AuralisMotion.DURATION_MEDIUM_MS))
+    val exit = fadeOut(tween(AuralisMotion.DURATION_MEDIUM_MS))
     GlassSurface(
         modifier = Modifier.fillMaxWidth(),
         shape = AuralisTheme.shapes.extraLarge,
@@ -338,8 +401,8 @@ private fun PlayerPanel(
         ) {
             AnimatedVisibility(
                 visible = !expanded,
-                enter = enter + expandVertically(motion.standard<IntSize>()),
-                exit = exit + shrinkVertically(motion.standard<IntSize>()),
+                enter = enter + expandVertically(resize),
+                exit = exit + shrinkVertically(resize),
             ) {
                 Column(modifier = Modifier.padding(bottom = spacing.sm)) {
                     Text(
@@ -398,8 +461,8 @@ private fun PlayerPanel(
                 // Shuffle and repeat fold away with the lyrics full screen, and the row re-centres.
                 AnimatedVisibility(
                     visible = !expanded,
-                    enter = enter + expandHorizontally(motion.standard<IntSize>()),
-                    exit = exit + shrinkHorizontally(motion.standard<IntSize>()),
+                    enter = enter + expandHorizontally(resize),
+                    exit = exit + shrinkHorizontally(resize),
                 ) {
                     TransportButton(
                         icon = AuralisIcons.Shuffle,
@@ -432,8 +495,8 @@ private fun PlayerPanel(
                 )
                 AnimatedVisibility(
                     visible = !expanded,
-                    enter = enter + expandHorizontally(motion.standard<IntSize>()),
-                    exit = exit + shrinkHorizontally(motion.standard<IntSize>()),
+                    enter = enter + expandHorizontally(resize),
+                    exit = exit + shrinkHorizontally(resize),
                 ) {
                     TransportButton(
                         icon = if (state.repeatMode == RepeatMode.ONE) AuralisIcons.RepeatOne else AuralisIcons.Repeat,
@@ -490,3 +553,7 @@ private val HeaderHeight = 56.dp
 private val CoverSize = 150.dp
 private val HeaderCoverSize = 44.dp
 private val RetryRowHeight = 56.dp
+// About 0.45 s to settle.
+private const val MORPH_STIFFNESS = 210f
+private const val COVER_GONE_SCALE = 0.72f
+private const val COVER_GONE_SHIFT = 0.3f

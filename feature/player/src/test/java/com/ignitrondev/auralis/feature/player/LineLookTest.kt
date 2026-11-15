@@ -42,4 +42,27 @@ class LineLookTest {
         assertEquals(lineLook(0, 0f, false), lineLook(5, 0f, false))
         assertEquals(lineLook(-4, 1f, false), lineLook(3, 1f, false))
     }
+
+    @Test
+    fun aDistanceBetweenTwoLinesBlendsTheirLooks() {
+        val sung = lineLook(0, 0f, true)
+        val next = lineLook(1, 0f, true)
+        val half = lineLook(0.5f, 0f, true)
+        assertEquals((sung.alpha + next.alpha) / 2f, half.alpha, 0.001f)
+        assertEquals((sung.sizeSp + next.sizeSp) / 2f, half.sizeSp, 0.001f)
+        assertEquals(lineLook(-2, 1f, true), lineLook(-2f, 1f, true))
+        assertEquals(lineLook(3, 0f, false), lineLook(2.4f, 0f, false))
+    }
+
+    @Test
+    fun theFocusedLineIsMeasuredFromTheTopOfTheViewportNotFromThePadding() {
+        // A 1000 px viewport with 500 px of padding above the first line: the viewport starts at -500.
+        // A 60 px line at the top of the content has its middle at 530 px from the top of the screen.
+        assertEquals(30f, focusDelta(itemOffset = 0, itemSize = 60, viewportStart = -500, viewportEnd = 500, fraction = 0.5f), 0.001f)
+        // Already centred: nothing to scroll.
+        assertEquals(0f, focusDelta(itemOffset = -30, itemSize = 60, viewportStart = -500, viewportEnd = 500, fraction = 0.5f), 0.001f)
+        // A line below the focus must scroll forward, one above it backward.
+        assertTrue(focusDelta(200, 60, -500, 500, 0.38f) > 0f)
+        assertTrue(focusDelta(-400, 60, -500, 500, 0.38f) < 0f)
+    }
 }
