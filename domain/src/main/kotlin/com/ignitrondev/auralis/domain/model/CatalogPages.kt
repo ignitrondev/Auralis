@@ -9,10 +9,22 @@ data class CatalogSection(
     val items: List<CatalogItem>,
 )
 
-/** The discovery feed shown on Home. */
+/**
+ * The discovery feed shown on Home.
+ *
+ * @property moods The mood filters the source offers (for example "Relax"), in its order. Empty
+ * when the source offers none, and in a feed that is already filtered.
+ */
 data class HomeFeed(
     val sections: List<CatalogSection>,
+    val moods: List<Mood> = emptyList(),
 )
+
+/**
+ * A mood filter for the home feed. [id] is opaque: only the source that issued it understands it,
+ * and it is passed back to [com.ignitrondev.auralis.domain.repository.CatalogRepository.home].
+ */
+data class Mood(val id: String, val label: String)
 
 /**
  * Search results grouped by type (spec section 9).

@@ -14,7 +14,8 @@ import com.ignitrondev.auralis.domain.model.SearchResults
  * Every call can fail with [CatalogException].
  */
 interface CatalogRepository {
-    suspend fun home(): HomeFeed
+    /** The home feed, filtered to [mood] when given (a [com.ignitrondev.auralis.domain.model.Mood.id]). */
+    suspend fun home(mood: String? = null): HomeFeed
 
     suspend fun search(query: String): SearchResults
 

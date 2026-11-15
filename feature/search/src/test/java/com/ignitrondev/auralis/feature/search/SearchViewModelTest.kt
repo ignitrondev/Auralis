@@ -38,7 +38,7 @@ class SearchViewModelTest {
             searched += query
             return SearchResults(query, null, emptyList(), emptyList(), emptyList(), emptyList())
         }
-        override suspend fun home(): HomeFeed = error("unused")
+        override suspend fun home(mood: String?): HomeFeed = error("unused")
         override suspend fun album(id: String): AlbumDetail = error("unused")
         override suspend fun artist(id: String): ArtistDetail = error("unused")
         override suspend fun playlist(id: String): PlaylistDetail = error("unused")

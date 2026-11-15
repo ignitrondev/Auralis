@@ -13,6 +13,13 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -100,6 +107,14 @@ fun AuralisApp(
                     .fillMaxSize()
                     .background(AuralisTheme.colors.background),
                 overlay = {
+                    // Fades whatever scrolls under the status bar, so titles do not run into the clock and icons.
+                    Box(
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + spacing.md)
+                            .background(Brush.verticalGradient(listOf(AuralisTheme.colors.background, Color.Transparent))),
+                    )
                     AnimatedVisibility(
                         visible = track != null && !showPlayer,
                         enter = motion.enter,

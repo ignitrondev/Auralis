@@ -4,5 +4,10 @@
     <string name="feature_home_greeting_afternoon">Good afternoon</string>
     <string name="feature_home_greeting_evening">Good evening</string>
     <string name="feature_home_subtitle">Discover your music</string>
+    <string name="feature_home_subtitle_continue">Pick up where you left off</string>
+    <string name="feature_home_continue_listening">Continue listening</string>
+    <string name="feature_home_quick_picks">Quick picks</string>
+    <string name="feature_home_account">Account and settings</string>
+    <string name="feature_home_empty_mood">Nothing for this mood right now. Pick another.</string>
     <string name="feature_home_empty">Nothing to show right now. Try again later.</string>
 </resources>

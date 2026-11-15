@@ -33,6 +33,7 @@ import com.ignitrondev.auralis.provider.youtube.parser.FeedParser
 import com.ignitrondev.auralis.provider.youtube.parser.HistoryParser
 import com.ignitrondev.auralis.provider.youtube.parser.LibraryCollectionParser
 import com.ignitrondev.auralis.provider.youtube.parser.LikeStatusParser
+import com.ignitrondev.auralis.provider.youtube.parser.MoodParser
 import com.ignitrondev.auralis.provider.youtube.parser.LyricsParser
 import com.ignitrondev.auralis.provider.youtube.parser.PlaylistParser
 import com.ignitrondev.auralis.provider.youtube.parser.SOURCE_ID
@@ -92,15 +93,21 @@ class YouTubeMusicProvider internal constructor(
      * feed alone has only a couple of shelves, and its follow-up pages need a request shape
      * InnerTubeX does not send. Both pages load in parallel; if explore fails, home still shows.
      */
-    override suspend fun home(): HomeFeed = request("home") {
+    override suspend fun home(mood: String?): HomeFeed = request("home") {
+        if (mood != null) {
+            // A mood filter is the home page asked with the chip's params; it has no explore shelves.
+            val filtered = browse(HOME_BROWSE_ID, params = mood)
+            return@request HomeFeed(FeedParser.parse(filtered))
+        }
         coroutineScope {
             val explore = async { runCatching { FeedParser.parse(browse(EXPLORE_BROWSE_ID)) } }
-            val home = FeedParser.parse(browse(HOME_BROWSE_ID))
+            val homePage = browse(HOME_BROWSE_ID)
+            val home = FeedParser.parse(homePage)
             val extra = explore.await().getOrElse { error ->
                 if (error is CancellationException) throw error
                 emptyList()
             }
-            HomeFeed((home + extra).distinctBy { it.title })
+            HomeFeed((home + extra).distinctBy { it.title }, MoodParser.parse(homePage))
         }
     }
 
@@ -321,8 +328,8 @@ class YouTubeMusicProvider internal constructor(
 
     override fun close() = session.close()
 
-    private suspend fun browse(browseId: String): JsonObject =
-        session.innerTube.browse(MUSIC_CLIENT, browseId = browseId).toJson("browse")
+    private suspend fun browse(browseId: String, params: String? = null): JsonObject =
+        session.innerTube.browse(MUSIC_CLIENT, browseId = browseId, params = params).toJson("browse")
 
     private suspend fun HttpResponse.toJson(operation: String): JsonObject {
         when (status.value) {

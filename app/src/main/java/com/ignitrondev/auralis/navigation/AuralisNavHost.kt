@@ -9,7 +9,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.navOptions
 import androidx.navigation.compose.NavHost
 import com.ignitrondev.auralis.core.ui.CatalogActions
 import com.ignitrondev.auralis.domain.model.MusicTrack
@@ -23,6 +25,7 @@ import com.ignitrondev.auralis.feature.home.navigation.homeScreen
 import com.ignitrondev.auralis.feature.library.navigation.navigateToLibraryCollection
 import com.ignitrondev.auralis.feature.library.navigation.libraryScreen
 import com.ignitrondev.auralis.feature.search.navigation.searchScreen
+import com.ignitrondev.auralis.feature.settings.navigation.navigateToSettings
 import com.ignitrondev.auralis.feature.settings.navigation.navigateToSignIn
 import com.ignitrondev.auralis.feature.settings.navigation.settingsScreen
 
@@ -52,7 +55,19 @@ fun AuralisNavHost(
         popEnterTransition = { fadeIn(tween(PAGE_FADE_MS)) },
         popExitTransition = { fadeOut(tween(PAGE_FADE_MS)) },
     ) {
-        homeScreen(actions)
+        homeScreen(
+            actions,
+            onOpenSettings = {
+                // Same as tapping the Settings tab: one copy of each tab, state saved and restored.
+                navController.navigateToSettings(
+                    navOptions {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    },
+                )
+            },
+        )
         searchScreen(actions)
         libraryScreen(
             actions,

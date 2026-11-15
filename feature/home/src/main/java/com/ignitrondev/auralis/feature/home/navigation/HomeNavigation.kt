@@ -16,8 +16,8 @@ data object HomeRoute
 
 fun NavController.navigateToHome(navOptions: NavOptions? = null) = navigate(HomeRoute, navOptions)
 
-fun NavGraphBuilder.homeScreen(actions: CatalogActions) {
+fun NavGraphBuilder.homeScreen(actions: CatalogActions, onOpenSettings: () -> Unit) {
     composable<HomeRoute> {
-        HomeDestination(actions = actions)
+        HomeDestination(actions = actions, onOpenSettings = onOpenSettings)
     }
 }

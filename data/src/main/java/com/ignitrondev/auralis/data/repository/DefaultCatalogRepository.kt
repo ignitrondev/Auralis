@@ -32,7 +32,13 @@ class DefaultCatalogRepository internal constructor(
     private var cachedHome: HomeFeed? = null
     private var cachedHomeAtMs = 0L
 
-    override suspend fun home(): HomeFeed = homeLock.withLock {
+    override suspend fun home(mood: String?): HomeFeed {
+        // A filtered feed is not cached: only the unfiltered feed is kept for tab switches.
+        if (mood != null) return provider.home(mood)
+        return unfilteredHome()
+    }
+
+    private suspend fun unfilteredHome(): HomeFeed = homeLock.withLock {
         val cached = cachedHome
         if (cached != null && clock() - cachedHomeAtMs < HOME_TTL_MS) return cached
         provider.home().also {
@@ -44,7 +50,7 @@ class DefaultCatalogRepository internal constructor(
     /** Drops the cached home feed, for pull-to-refresh. */
     suspend fun refreshHome(): HomeFeed {
         homeLock.withLock { cachedHome = null }
-        return home()
+        return unfilteredHome()
     }
 
     override suspend fun search(query: String): SearchResults = provider.search(query)

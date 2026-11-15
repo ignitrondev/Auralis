@@ -18,7 +18,7 @@ interface CatalogProvider {
     /** Matches the sourceId of every item this provider returns, for example "youtube". */
     val sourceId: String
 
-    suspend fun home(): HomeFeed
+    suspend fun home(mood: String? = null): HomeFeed
 
     suspend fun search(query: String): SearchResults
 
