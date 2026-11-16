@@ -58,6 +58,20 @@ password. Your session is stored encrypted on your device and removed when you s
 no analytics or third-party trackers. See the [security policy](SECURITY.md) to report a security
 issue.
 
+## Code signing policy
+
+Free code signing for the Windows installer is provided by [SignPath.io](https://signpath.io),
+with a certificate issued by the [SignPath Foundation](https://signpath.org).
+
+- **Authors and reviewers:** the [IgnitronDev maintainers](https://github.com/orgs/ignitrondev/people).
+  Changes from anyone else are reviewed in a pull request before they are merged.
+- **Approvers:** the [repository owners](https://github.com/orgs/ignitrondev/people?query=role%3Aowner),
+  who approve each release before it is signed.
+
+Installers are built from this repository by GitHub Actions. Auralis sends no information to other
+networked systems unless you ask it to; what it connects to is described under [Privacy](#privacy).
+To remove Auralis from Windows, use **Settings → Apps → Installed apps**.
+
 ## About the project
 
 Auralis is an unofficial, independent project and is not affiliated with YouTube or Google. This
