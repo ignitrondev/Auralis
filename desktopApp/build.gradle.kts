@@ -36,7 +36,11 @@ compose.desktop {
         mainClass = "com.ignitrondev.auralis.desktop.MainKt"
         nativeDistributions {
             packageName = "Auralis"
-            packageVersion = "2.1.0"
+            // The release workflow passes the tag's version; an MSI version is three numbers.
+            packageVersion = providers.gradleProperty("auralisDesktopVersion").getOrElse("2.1.0")
+            // The whole Java runtime. The tool that guesses the needed modules misses java.net.http,
+            // which the network client loads, and a missing module only fails once the app runs.
+            includeAllModules = true
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi)
             windows {
                 menuGroup = "Auralis"
