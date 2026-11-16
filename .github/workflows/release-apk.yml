@@ -1,4 +1,4 @@
-name: Build and publish APK
+name: Build and publish release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing tag to build and publish (for example v2.0.0-beta.1)
+        description: Existing tag to build and publish (for example v2.1.0)
         required: true
         type: string
 
@@ -110,3 +110,56 @@ jobs:
               --title "Auralis $RELEASE_TAG" \
               "${notes_args[@]}"
           fi
+
+  windows-installer:
+    # After the release exists, so the installer can be attached to it. A failure here leaves the
+    # APK release as it is.
+    needs: build-and-release
+    runs-on: windows-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the Windows installer
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          # An MSI version is MAJOR.MINOR.BUILD: drop the leading v and any pre-release suffix.
+          version="${RELEASE_TAG#v}"
+          version="${version%%-*}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Cannot make an installer version from tag $RELEASE_TAG" >&2
+            exit 1
+          fi
+          # packageMsi, not packageReleaseMsi: the release variant shrinks the code with ProGuard,
+          # which fails on this module until it has keep rules.
+          ./gradlew :desktopApp:packageMsi -PauralisDesktopVersion="$version"
+          mkdir -p release-assets
+          msi_path="$(find desktopApp/build/compose/binaries/main/msi -name '*.msi' -print -quit)"
+          if [[ -z "$msi_path" ]]; then
+            echo "No installer was produced" >&2
+            exit 1
+          fi
+          cp "$msi_path" "release-assets/Auralis-$RELEASE_TAG.msi"
+
+      - name: Attach the installer to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" "release-assets/Auralis-$RELEASE_TAG.msi" --repo "$GITHUB_REPOSITORY" --clobber

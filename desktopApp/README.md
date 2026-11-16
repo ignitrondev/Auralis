@@ -13,8 +13,12 @@ Run from the repository root:
 Build the Windows installer on Windows with JDK 17 or newer:
 
 ```powershell
-./gradlew :desktopApp:packageReleaseMsi
+./gradlew :desktopApp:packageMsi
 ```
+
+The release workflow builds the same installer for every version tag and attaches it to the GitHub
+release as `Auralis-<tag>.msi`. The installer is not signed, so Windows shows a SmartScreen warning.
+`packageReleaseMsi` does not work yet: it shrinks the code with ProGuard, which needs keep rules.
 
 This first desktop version does not include account sign-in. YouTube may refuse signed-out playback,
 and a stream whose audio codec is unsupported by JavaFX Media will show an error in the player.
