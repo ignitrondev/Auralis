@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -24,8 +25,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,6 +45,7 @@ import com.ignitrondev.auralis.core.designsystem.component.Artwork
 import com.ignitrondev.auralis.core.designsystem.component.GlassButton
 import com.ignitrondev.auralis.core.designsystem.component.GlassCard
 import com.ignitrondev.auralis.core.designsystem.component.GlassIconButton
+import com.ignitrondev.auralis.core.designsystem.component.GlassSurface
 import com.ignitrondev.auralis.core.designsystem.component.LocalBottomChromePadding
 import com.ignitrondev.auralis.core.designsystem.icon.AuralisIcons
 import com.ignitrondev.auralis.core.designsystem.theme.AuralisTheme
@@ -119,7 +129,10 @@ private fun AccountContent(state: AuthState, onSignIn: () -> Unit, onSignOut: ()
     }
 }
 
-/** Google's sign-in page; leaves as soon as the session is confirmed. */
+/**
+ * Sign-in: Google's own page inside a glass sheet, under a header that says what is happening.
+ * It leaves as soon as the session is confirmed.
+ */
 @Composable
 fun SignInScreen(
     onDone: () -> Unit,
@@ -127,29 +140,82 @@ fun SignInScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state) { if (state == SignInState.Done) onDone() }
-    Box(
+    val colors = AuralisTheme.colors
+    val spacing = AuralisTheme.spacing
+    // Progress of Google's page, and whether it could be loaded at all. A new attempt is a new page.
+    var progress by remember { mutableFloatStateOf(0f) }
+    var loadFailed by remember { mutableStateOf(false) }
+    var attempt by remember { mutableIntStateOf(0) }
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.statusBars),
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = spacing.screenGutter)
+            .padding(bottom = LocalBottomChromePadding.current + spacing.md),
+        verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
-        when (state) {
-            SignInState.Browsing -> SignInWebView(
-                onSession = viewModel::onSession,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 64.dp, bottom = LocalBottomChromePadding.current),
+        Row(
+            modifier = Modifier.padding(top = spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+        ) {
+            GlassIconButton(
+                icon = AuralisIcons.Back,
+                contentDescription = stringResource(UiR.string.core_ui_back),
+                onClick = onDone,
             )
-            SignInState.Checking, SignInState.Done -> LoadingState()
-            SignInState.Failed -> MessageState(stringResource(R.string.feature_settings_sign_in_failed)) {
-                GlassButton(text = stringResource(R.string.feature_settings_sign_in_again), onClick = viewModel::retry)
+            Column {
+                Text(
+                    stringResource(R.string.feature_settings_sign_in_title),
+                    style = AuralisTheme.typography.itemTitle,
+                    color = colors.contentPrimary,
+                )
+                Text(
+                    stringResource(R.string.feature_settings_sign_in_note),
+                    style = AuralisTheme.typography.itemSubtitle,
+                    color = colors.contentSecondary,
+                )
             }
         }
-        GlassIconButton(
-            icon = AuralisIcons.Back,
-            contentDescription = stringResource(UiR.string.core_ui_back),
-            onClick = onDone,
-            modifier = Modifier.padding(AuralisTheme.spacing.sm),
-        )
+        GlassSurface(modifier = Modifier.weight(1f).fillMaxWidth(), shape = AuralisTheme.shapes.extraLarge) {
+            when {
+                state == SignInState.Failed -> MessageState(stringResource(R.string.feature_settings_sign_in_failed)) {
+                    GlassButton(text = stringResource(R.string.feature_settings_sign_in_again), onClick = viewModel::retry)
+                }
+                state != SignInState.Browsing -> LoadingState()
+                loadFailed -> MessageState(stringResource(R.string.feature_settings_sign_in_offline)) {
+                    GlassButton(
+                        text = stringResource(UiR.string.core_ui_retry),
+                        onClick = {
+                            loadFailed = false
+                            progress = 0f
+                            attempt++
+                        },
+                    )
+                }
+                else -> {
+                    key(attempt) {
+                        SignInWebView(
+                            onSession = viewModel::onSession,
+                            dark = colors.isDark,
+                            onProgress = { progress = it },
+                            onLoadFailed = { loadFailed = true },
+                            modifier = Modifier.fillMaxSize().clip(AuralisTheme.shapes.extraLarge),
+                        )
+                    }
+                    // Nothing of the page shows before its first draw, so say that it is coming.
+                    if (progress < 1f) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .drawBehind { drawRect(colors.contentPrimary, size = size.copy(width = size.width * progress)) },
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
